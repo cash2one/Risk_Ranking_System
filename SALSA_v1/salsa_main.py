@@ -102,38 +102,6 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):
     return
 
 
-def compare_scores_histogram(run_mode,algorithms_list=[],evaluated_domain_list=None):
-    removed_domains_f = '/home/michal/SALSA_files/tmp/remove_domains_from_results'
-    for alg in algorithms_list:
-        
-        print '\n--- main: '+alg; sys.stdout.flush()
-        if 'pagerank' in alg:
-            scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
-            gm.histogram_of_dict(scores_dict, fn=removed_domains_f,bins=150)
-        else:
-            a_scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
-            print '--- main: authorities'; sys.stdout.flush()
-            gm.histogram_of_dict(a_scores_dict, fn=removed_domains_f,bins=150)
-            print '\n--- main: combined'; sys.stdout.flush()
-    scores_dict = combine_scores(algorithms_list)
-    gm.histogram_of_dict(scores_dict, fn=removed_domains_f,bins=150)
-            
-        
-    return
-
-def combine_scores(algorithms_list,fn=None):
-    dicts_list = []
-    for alg in algorithms_list:
-        dicts_list.append(gm.read_object_from_file( ''.join(['/home/michal/SALSA_files/tmp/real_run/',alg,'_a_dict_pickle']) )) 
-    #dict_f = '/home/michal/SALSA_files/tmp/real_run/combined.csv'
-    d = gm.create_max_dict_from_dicts(dicts_list)#, dict_f)
-    
-    u_pct_dict, l_pct_dict = gm.get_percentiles(d)
-    #pct_dict_f = '/home/michal/SALSA_files/outputs/real_run/combined.csv'
-    if fn:
-        gm.write_union_of_dicts_ordered_by_value_to_file(d, [u_pct_dict,l_pct_dict], fn)#pct_dict_f)
-    return d
-
 
 def generate_combined_scores(run_mode,algorithms_list=[],evaluated_domain_list=None):
     startTime = datetime.now()
@@ -168,3 +136,37 @@ def generate_combined_scores(run_mode,algorithms_list=[],evaluated_domain_list=N
     return
 
 call_main()'''
+
+
+
+def compare_scores_histogram(run_mode,algorithms_list=[],evaluated_domain_list=None):
+    removed_domains_f = '/home/michal/SALSA_files/tmp/remove_domains_from_results'
+    for alg in algorithms_list:
+        
+        print '\n--- main: '+alg; sys.stdout.flush()
+        if 'pagerank' in alg:
+            scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
+            gm.histogram_of_dict(scores_dict, fn=removed_domains_f,bins=150)
+        else:
+            a_scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
+            print '--- main: authorities'; sys.stdout.flush()
+            gm.histogram_of_dict(a_scores_dict, fn=removed_domains_f,bins=150)
+            print '\n--- main: combined'; sys.stdout.flush()
+    scores_dict = combine_scores(algorithms_list)
+    gm.histogram_of_dict(scores_dict, fn=removed_domains_f,bins=150)
+            
+        
+    return
+
+def combine_scores(algorithms_list,fn=None):
+    dicts_list = []
+    for alg in algorithms_list:
+        dicts_list.append(gm.read_object_from_file( ''.join(['/home/michal/SALSA_files/tmp/real_run/',alg,'_a_dict_pickle']) )) 
+    #dict_f = '/home/michal/SALSA_files/tmp/real_run/combined.csv'
+    d = gm.create_max_dict_from_dicts(dicts_list)#, dict_f)
+    
+    u_pct_dict, l_pct_dict = gm.get_percentiles(d)
+    #pct_dict_f = '/home/michal/SALSA_files/outputs/real_run/combined.csv'
+    if fn:
+        gm.write_union_of_dicts_ordered_by_value_to_file(d, [u_pct_dict,l_pct_dict], fn)#pct_dict_f)
+    return d
