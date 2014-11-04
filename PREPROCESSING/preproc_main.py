@@ -50,19 +50,19 @@ def get_input_files(runType):
                  '/'.join([main_dir,'2/stats_12_03_10/part-00008']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00009']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00010'])] '''
-        Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001'])]  # 19673 domains, 6 malwares, 47593 edges
-        '''NANCY FILES:
-        Files = ['/data2/2/stats_12_03_10/part-00000',\
-                 '/data2/2/stats_12_03_10/part-00048',\
-                 '/data2/2/stats_12_03_11/part-00001',\
-                 '/data2/2/stats_12_03_11/part-00010',\
-                 '/data2/2/stats_12_03_13/part-00001',\
-                 '/data2/2/stats_12_03_14/part-00001',\
-                 '/data2/2/stats_12_03_15/part-00000',\
-                 '/data2/2/stats_12_03_16/part-00000',\
-                 '/data2/150/stats_12_03_15/part-00000',\
-                 '/data2/150/stats_12_03_15/part-00001',\
-                 '/data2/150/stats_12_03_10/part-00049']'''
+        #Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001'])]  # 19673 domains, 6 malwares, 47593 edges
+        '''NANCY FILES:'''
+        Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00000']),\
+                 '/'.join([main_dir,'2/stats_12_03_10/part-00048']),\
+                 '/'.join([main_dir,'2/stats_12_03_11/part-00001']),\
+                 '/'.join([main_dir,'2/stats_12_03_11/part-00010']),\
+                 '/'.join([main_dir,'2/stats_12_03_13/part-00001']),\
+                 '/'.join([main_dir,'2/stats_12_03_14/part-00001']),\
+                 '/'.join([main_dir,'2/stats_12_03_15/part-00000']),\
+                 '/'.join([main_dir,'2/stats_12_03_16/part-00000']),\
+                 '/'.join([main_dir,'150/stats_12_03_15/part-00000']),\
+                 '/'.join([main_dir,'150/stats_12_03_15/part-00001']),\
+                 '/'.join([main_dir,'150/stats_12_03_10/part-00049']) ]
         #Files = [ '/data/150/stats_12_03_10/part-00000']
         #Files = [ '/data/2/stats_12_03_10/part-00001','/data/2/stats_12_03_11/part-00001','/data/2/stats_12_03_12/part-00001','/data/2/stats_12_03_13/part-00001']
     

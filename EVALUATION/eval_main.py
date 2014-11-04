@@ -5,15 +5,19 @@ Created on Aug 27, 2014
 '''
 import preproc_main as preproc
 import salsa_main as salsa
+import generalMethods as gm
 from datetime import datetime
 import sys
 from multiprocessing import Pool
 
+global num_of_proc; num_of_proc = 3
+global run_mode; run_mode = 'real_run'  #'small_test'
 
 def run_entire_flow(run_mode,algorithms_list=[],mal_domains_list=[],wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.):  
+    global num_of_proc
     print 'EVALUATION: run mode- '+run_mode+', STRAT -----> ' + str(datetime.now()); sys.stdout.flush();startTime = datetime.now() 
     if mal_domains_list:
-            pool = Pool(processes=3)
+            pool = Pool(processes=num_of_proc)
             #args_list = [ eval(''.join(['(\'',run_mode,'\',',str(algorithms_list),',[\'',d,'\'],',str(wo_users),',',str(link_ref),',',str(link_weight),',',str(redirect_ref),',',str(redirect_weight),')'])) \
             #             for d in mal_domains_list ]
             args_list = [ (run_mode,algorithms_list,[d],wo_users,link_ref,link_weight,redirect_ref,redirect_weight)\
@@ -26,7 +30,7 @@ def run_entire_flow(run_mode,algorithms_list=[],mal_domains_list=[],wo_users=Fal
             #preproc.main(run_mode, evaluated_domain_list=[d],wo_users=wo_users,link_ref=link_ref,link_weight=link_weight,redirect_ref=redirect_ref,redirect_weight=redirect_weight)
             #salsa.main(run_mode, algorithms_list,evaluated_domain_list=[d])
     else:
-        run_entire_flow_iteration(run_mode,algorithms_list,evaluated_domain_list=[],wo_users=wo_users,link_ref=link_ref,link_weight=link_weight,redirect_ref=redirect_ref,redirect_weight=redirect_weight)
+        run_entire_flow_iteration(run_mode,algorithms_list,mal_domains_list,wo_users,link_ref,link_weight,redirect_ref,redirect_weight)
         #preproc.main(run_mode, evaluated_domain_list=[],wo_users=wo_users,link_ref=link_ref,link_weight=link_weight,redirect_ref=redirect_ref,redirect_weight=redirect_weight)
         #salsa.main(run_mode, algorithms_list,evaluated_domain_list=[])
     # TBD- run regular preproc and salsa for baseline ranks ?
@@ -34,7 +38,7 @@ def run_entire_flow(run_mode,algorithms_list=[],mal_domains_list=[],wo_users=Fal
     return
 
 def run_entire_flow_iteration(run_mode,algorithms_list=[],mal_domains_list=[],wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.):
-    outFile = salsa.get_general_file_path(run_mode,file_name='stdout',evaluated_domain_list=mal_domains_list,dir='outputs')
+    outFile = gm.get_general_file_path(run_mode,file_name='stdout',evaluated_domain_list=mal_domains_list,dir='outputs')
     sys.stdout = open(outFile,'w')
     
     preproc.main(run_mode, evaluated_domain_list=mal_domains_list,wo_users=wo_users,link_ref=link_ref,link_weight=link_weight,redirect_ref=redirect_ref,redirect_weight=redirect_weight)
@@ -75,22 +79,33 @@ def run_scores_histogram(run_mode,algorithms_list=[]):
     return
 
 def main():
-    run_mode='real_run'
+    global run_mode
+    #run_mode='real_run'
     #run_mode='small_test'
     #run_mode='big_test'
     if run_mode == 'real_run':
-        mal_domains_list = ['install.latestdl.info',\
+        #mal_domains_list = []
+        mal_domains_list = []
+        '''['install.latestdl.info',\
                        'narod.ru',\
                        'click.readme.ru',\
                        'clck.ru',\
                        'allnokia.ru',\
-                       'fion.ru']
-        algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
-
+                       'fion.ru']'''
+        
+        '''mal_domains_list = ['latestdl.info',\
+                       'narod.ru',\
+                       'readme.ru',\
+                       'clck.ru',\
+                       'allnokia.ru',\
+                       'fion.ru']'''
+        #algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
+        algorithms_list = ['hits', 'pagerank', 'inverse_pagerank']
     else:
-        mal_domains_list = ['click.readme.ru','clck.ru','sharingmatrix.com','yaicom.ru','rustorrents.org']
+        mal_domains_list = []#'click.readme.ru','clck.ru','sharingmatrix.com','yaicom.ru']#,'rustorrents.org']
         #algorithms_list = ['salsa']
         algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank']
+        
     #algorithms_list = ['hits', 'pagerank', 'inverse_pagerank'] 
     #run_NANCY_flow(run_mode)
     run_entire_flow(run_mode,algorithms_list,mal_domains_list,redirect_ref=True,redirect_weight=0.5,link_ref=True,link_weight=0.2)#,wo_users=True)

@@ -41,13 +41,13 @@ class node_attributes():
     
     pagerank_score = 'pr'
     pagerank_bucket = 'pr_bucket'
-    pagerank_u_pct = 'pagerank_u_pct'   
-    pagerank_l_pct = 'pagerank_l_pct'
+    pagerank_u_pct = 'pr_u_pct'   
+    pagerank_l_pct = 'pr_l_pct'
     
-    inverse_pagerank_score = 'inverse_pr'
-    inverse_pagerank_bucket = 'inverse_pr_bucket'
-    inverse_pagerank_u_pct = 'inverse_pagerank_u_pct'   
-    inverse_pagerank_l_pct = 'inverse_pagerank_l_pct'
+    inverse_pagerank_score = 'inv_pr'
+    inverse_pagerank_bucket = 'inv_pr_bucket'
+    inverse_pagerank_u_pct = 'inv_pr_u_pct'   
+    inverse_pagerank_l_pct = 'inv_pr_l_pct'
     
 class buckets():
     buckets = {}
@@ -120,11 +120,11 @@ class buckets():
         
     
 class domains_graph():
-    G = nx.DiGraph      # directed graph: node = domain, edge(A,B) = user passed from domain A to B
-    CN = 'CN'           # Central Node (first/last domain in each session connected from/to this node) 
-    e_attr = edge_attributes()
-    n_attr = node_attributes()
-    b = buckets() # buckets instantiation
+    G = nx.DiGraph              # directed graph: node = domain, edge(A,B) = user passed from domain A to B
+    CN = 'CN'                   # Central Node (first/last domain in each session connected from/to this node) 
+    e_attr = edge_attributes()  # edge_attributes instantiation (for coding purposes only)
+    n_attr = node_attributes()  # node_attributes instantiation (for coding purposes only)
+    b = buckets()               # buckets instantiation
     
     def __init__(self, transitions_dict_file):
         #G = nx.from_dict_of_dicts(Transitions_Dict, create_using, multigraph_input)
@@ -392,6 +392,64 @@ class domains_graph():
         gm.histogram_of_dict(self.get_nodes_attr_val_dict(score_attr), bins=self.G.number_of_nodes()/100)
         return
         
+    def create_combined_scores(self,run_mode,alg_list=[],evaluated_domain_list=None,attr='Lpct'):
+        # alg_list = list of algorithms to combine its scores
+        # attr = (string) the node attribute which the combined score is based on
+        dicts = []
+        if attr == 'Lpct':
+            alg_auth_attr = {'salsa':self.n_attr.salsa_auth_l_pct, \
+               'hits':self.n_attr.hits_auth_l_pct, \
+               'pagerank':self.n_attr.pagerank_l_pct,\
+               'inverse_pagerank':self.n_attr.inverse_pagerank_l_pct}
+            
+            alg_hub_attr = {'salsa':self.n_attr.salsa_hub_l_pct, \
+               'hits':self.n_attr.hits_hub_l_pct}
+                
+            for alg in alg_list:
+                dicts.append(self.get_nodes_attr_val_dict(alg_auth_attr[alg]))   # create a dict of the domains l_pct and push it to dicts list
+            dicts.append(self.get_nodes_attr_val_dict(self.n_attr.risk))   
+        
+        for comb_type in ['max','avg','top3_avg','top2_avg']:
+            out_file = gm.get_general_file_path(run_mode,'_'.join([comb_type,attr]),evaluated_domain_list,dir='outputs')
+            gm.create_combined_score(comb_type,dicts,is_last_dict_risk=True,fn=out_file)   
+        
+        # create a new high level score for hits and salsa (max of auth/hub score):
+        tmp_dicts = []
+        for k,v in alg_hub_attr.items():    # for each alg [salsa, hits]
+            tmp_dicts.append( dicts.pop( alg_list.index(k) ) )  # add auth scores dict
+            tmp_dicts.append( self.get_nodes_attr_val_dict(v) )
+            out_file = gm.get_general_file_path(run_mode,'_'.join([k,'max',attr]),evaluated_domain_list,dir='outputs')
+            gm.create_combined_score('max',tmp_dicts,is_last_dict_risk=False,fn=out_file)   
+            del tmp_dicts[:]
+        
+        '''combine_types = {'max_Lpct': 'gm.create_max_dict_from_dicts(dicts)',\
+                       'avg_Lpct': 'gm.create_avg_dict_from_dicts(dicts)',\
+                       'top3_avg_Lpct': 'gm.create_avg_dict_from_dicts(dicts,n=3)',\
+                       'top2_avg_Lpct': 'gm.create_avg_dict_from_dicts(dicts,n=2)'}
+        
+        for k,v in combine_types.items():        
+            out_file = gm.get_general_file_path(run_mode,k,evaluated_domain_list,dir='outputs') 
+            comb_score_dict = eval(v)
+            u_pct_dict, l_pct_dict = gm.get_percentiles(comb_score_dict)
+            gm.write_union_of_dicts_ordered_by_value_to_file(comb_score_dict, [u_pct_dict,l_pct_dict,dicts[-1]], out_file)
+        
+        # create a new high level score for hits and salsa (max of auth/hub score):
+        del dicts[:]
+        if attr == 'l_pct':
+            alg_hub_attr = {'salsa':self.n_attr.salsa_hub_l_pct, \
+               'hits':self.n_attr.hits_hub_l_pct}
+            for k,v in alg_hub_attr.items():    # for each alg [salsa, hits]
+                dicts.append(self.get_nodes_attr_val_dict(v))                   # add hub scores dict
+                dicts.append(self.get_nodes_attr_val_dict(alg_auth_attr[k]))    # add auth scores dict
+                out_file = gm.get_general_file_path(run_mode,'_'.join([k,'max']),evaluated_domain_list,dir='outputs')
+                comb_score_dict = gm.create_max_dict_from_dicts(dicts)
+                u_pct_dict, l_pct_dict = gm.get_percentiles(comb_score_dict)
+                gm.write_union_of_dicts_ordered_by_value_to_file(comb_score_dict, [u_pct_dict,l_pct_dict,dicts[-1]], out_file)
+        '''        
+        
+        return
+
+
     
     def get_nodes_position_dict_from_scores_dict(self,d):
         # d = dict of nodes and its scores (of one of the algorithems- SALSA/HITS/PageRank)

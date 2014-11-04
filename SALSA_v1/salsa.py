@@ -517,6 +517,7 @@ def calc_salsa_per_class(G, rank_type):
         out_file = ''.join(['/home/michal/SALSA_files/tmp/real_run/graph_',str(classes.index(subG))])
         gm.write_graph_to_file(subG, out_file)'''
         tmp_d = eig_calc(subG, normalize=num_of_not_isolates)   
+        #tmp_d = power_iteration(subG,max_iter=100,tol=1.0e-8,normalize=num_of_not_isolates,nstart=None)
         #tmp_d = power_iteration(subG, normalize=num_of_not_isolates, nstart=[v[G.n_attr.risk] for v in subG.nodes(data=True)])
         for k,v in tmp_d.items():
             d = G.nodes()[k]
@@ -596,9 +597,10 @@ def power_iteration(G,max_iter=100,tol=1.0e-8,normalize=None,nstart=None):
             # in general- this method is used when there are only 2 nodes in the class 
             # if the graph is aperiodic than the vector we got after max_iter is good eanough
             if nx.is_aperiodic(G):   
-                print '(salsa) power_iteration: (APERIODIC CLASS) failed to converge in %d iterations, continues with the last vector!!!'%(i+1)
+                print '(salsa) power_iteration: (APERIODIC CLASS- ',n,' nodes) failed to converge in %d iterations, continues with the last vector!!!'%(i+1)
                 break
             else: #the class is periodic
+                print '(salsa) power_iteration: (',n,' nodes) PERIODIC CLASS!!!'
                 raise NetworkXError("(salsa) power_iteration: (PERIODIC CLASS) power iteration failed to converge in %d iterations."%(i+1))
         i+=1
 

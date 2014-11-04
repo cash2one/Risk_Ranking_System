@@ -192,9 +192,10 @@ def read_object_from_file(fn):
     import pickle
     return pickle.load(open(fn))
 
+
 def get_percentiles(src_dict):
     from scipy.stats import stats as spst
-    K,V = zip(*(list(sorted(src_dict.items(), key=itemgetter(1))))) #unzip the ordered src_dict
+    K,V = zip(*(list(sorted(src_dict.items(), key=itemgetter(1))))) # unzip the ordered src_dict
     u_pct = [spst.percentileofscore(V,v,kind='weak') for v in V]    # upper percentile list (under OR EQUAL)
     l_pct = [spst.percentileofscore(V,v,kind='strict') for v in V]  # lower percentile list (under)
     u_pct_dict = dict(zip(K,map(float,u_pct)))
@@ -214,19 +215,47 @@ def histogram_of_dict(d,fn,bins=200):
     return
 
 def clean_scores_dict(d,fn):
+    # Deletes elements from dict, where the deleted keys appear in a file
+    # d = dict
+    # fn = full path of the file containing the list of required removed keys
     with open(fn,'r') as f:
         remove_keys = f.readlines()
     remove_keys = [k.rstrip() for k in remove_keys]
     for k in remove_keys:
         del d[k]
     return d
+
+
+def create_combined_score(comb_type,dicts_list,is_last_dict_risk=False,fn=None):
+    # dicts_list = list of dictionaries 
+    # is_last_dict_risk = True if the last element in dicts_list is the init risk rank dict
+    # comb_type = (str) type of combination: max, avg, top2_avg, top3_avg
+    # fn = full path of output file
     
-def create_max_dict_from_dicts(dicts_list,fn=None):
+    combine_types = {'max': 'create_max_dict_from_dicts(dicts_list)',\
+                   'avg': 'create_avg_dict_from_dicts(dicts_list)',\
+                   'top3_avg': 'create_avg_dict_from_dicts(dicts_list,n=3)',\
+                   'top2_avg': 'create_avg_dict_from_dicts(dicts_list,n=2)'}
+    comb_score_dict = eval(combine_types[comb_type])
+    u_pct_dict, l_pct_dict = get_percentiles(comb_score_dict)
+    if is_last_dict_risk:
+        write_union_of_dicts_ordered_by_value_to_file(comb_score_dict, [u_pct_dict,l_pct_dict,dicts_list[-1]], fn)
+    else:
+        write_union_of_dicts_ordered_by_value_to_file(comb_score_dict, [u_pct_dict,l_pct_dict], fn)
+    return
+        
+def create_max_dict_from_dicts(dicts_list,threshold=0,fn=None):
     # dicts_list = list of dictionaries WHICH HAVE THE SAME KEIS!!!!!
     # fn = output file path
     d = {}
-    for key in dicts_list[0]:
-        d[key] = max([dict_i[key] for dict_i in dicts_list])
+    if threshold > 0:
+        for key in dicts_list[0]:
+            max_val = max([dict_i[key] for dict_i in dicts_list])
+            if max_val > threshold: d[key] = max_val
+            else: d[key] = min([dict_i[key] for dict_i in dicts_list])
+    else:
+        for key in dicts_list[0]:
+            d[key] = max([dict_i[key] for dict_i in dicts_list])
     if fn:
         write_dict_ordered_by_value_to_file(d,fn)
     return d
@@ -246,6 +275,7 @@ def create_avg_dict_from_dicts(dicts_list,n=None,fn=None):
         write_dict_ordered_by_value_to_file(d,fn)
     return d
 
+
 def write_dict_of_dicts_to_file(d,fn,first_col_name='domain'):
     # d is a dict of dicts
     # fn is the full path of the output file
@@ -264,5 +294,14 @@ def write_dict_of_dicts_to_file(d,fn,first_col_name='domain'):
             #w.writerow([k]+[attr for attr in sorted(d[k])])
             w.writerow([k]+list(zip(*sorted(d[k].items()))[1]))
     return
+
+def get_general_file_path(run_mode,file_name,evaluated_domain_list=None,dir='tmp'):       
+    postfix = ''
+    if evaluated_domain_list:
+        evaluated_domains_str = '_'.join(evaluated_domain_list)
+        postfix = ''.join(['_without_',evaluated_domains_str])
+    
+    main_dir = '/home/michal/SALSA_files'
+    return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,'.csv'])])
 
 epsilon = 1e-4 #0.0001

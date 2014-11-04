@@ -41,14 +41,7 @@ def get_output_files(run_mode,alg,evaluated_domain_list=None):
 
     return output_hubs_file, output_authorities_file
 
-def get_general_file_path(run_mode,file_name,evaluated_domain_list=None,dir='tmp'):       
-    postfix = ''
-    if evaluated_domain_list:
-        evaluated_domains_str = '_'.join(evaluated_domain_list)
-        postfix = ''.join(['_without_',evaluated_domains_str])
-    
-    main_dir = '/home/michal/SALSA_files'
-    return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,'.csv'])])
+
 
 def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):                
     #IMPORTANT: algorithms_list- inverse RP changes the graph itself, hence should be last
@@ -84,18 +77,19 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):
         G.evaluate_algorithem(auth_fn=authorities_file, hub_fn=hubs_file, alg_type=alg)
         
         # write a and h dicts to files using pickle:
-        a_fn = get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list)
+        a_fn = gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list)
         gm.write_object_to_file(a, a_fn)
         #G.alg_histogram(alg)
         print '\n--- main: '+alg+' run + evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
     for n in evaluated_domain_list:
         #out_fn = get_general_file_path(run_mode,file_name='eval_out',evaluated_domain_list=[n],dir='outputs')
-        out_fn = get_general_file_path(run_mode,file_name='eval_out_sum',dir='outputs')
+        out_fn = gm.get_general_file_path(run_mode,file_name='eval_out_sum',dir='outputs')
         G.write_eval_results_to_csv(evaluated_node=n,fn=out_fn)
-        
+    # combined lower percentage score dict:
+    G.create_combined_scores(run_mode, algorithms_list, evaluated_domain_list)   
     G.clear(); tmpTime = datetime.now()    #clean the graph and all it's attributes for (optional) next run
-    # combined score dict:
-    generate_combined_scores(run_mode,algorithms_list,evaluated_domain_list)
+    # combined pure risk rank score dict:
+    #generate_combined_scores(run_mode,algorithms_list,evaluated_domain_list)
     print '\n--- main: combined scores generation and evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush();
     
     print '\nALGORITHMS END.\tTotal run time: ' + str(datetime.now()-startTime); sys.stdout.flush()
@@ -107,19 +101,19 @@ def generate_combined_scores(run_mode,algorithms_list=[],evaluated_domain_list=N
     startTime = datetime.now()
     dicts_list = []
     for alg in algorithms_list:
-        dicts_list.append(gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )) 
+        dicts_list.append(gm.read_object_from_file( gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )) 
 
     combine_types = {'max': 'gm.create_max_dict_from_dicts(dicts_list)',\
                        'avg': 'gm.create_avg_dict_from_dicts(dicts_list)',\
                        'top_3_avg': 'gm.create_avg_dict_from_dicts(dicts_list,n=3)',\
                        'top_2_avg': 'gm.create_avg_dict_from_dicts(dicts_list,n=2)'}
     for k,v in combine_types.items():
-        out_file = get_general_file_path(run_mode,k,evaluated_domain_list,dir='outputs') 
+        out_file = gm.get_general_file_path(run_mode,k,evaluated_domain_list,dir='outputs') 
         comb_score_dict = eval(v)
         u_pct_dict, l_pct_dict = gm.get_percentiles(comb_score_dict)
         gm.write_union_of_dicts_ordered_by_value_to_file(comb_score_dict, [u_pct_dict,l_pct_dict], out_file)
     print '\n--- main: combined scores generation and evaluation took: ' + str(datetime.now()-startTime); sys.stdout.flush();
-    
+    return
 
 '''def call_main():
     #run_mode = 'small_test'
@@ -145,10 +139,10 @@ def compare_scores_histogram(run_mode,algorithms_list=[],evaluated_domain_list=N
         
         print '\n--- main: '+alg; sys.stdout.flush()
         if 'pagerank' in alg:
-            scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
+            scores_dict = gm.read_object_from_file( gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
             gm.histogram_of_dict(scores_dict, fn=removed_domains_f,bins=150)
         else:
-            a_scores_dict = gm.read_object_from_file( get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
+            a_scores_dict = gm.read_object_from_file( gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list) )
             print '--- main: authorities'; sys.stdout.flush()
             gm.histogram_of_dict(a_scores_dict, fn=removed_domains_f,bins=150)
             print '\n--- main: combined'; sys.stdout.flush()

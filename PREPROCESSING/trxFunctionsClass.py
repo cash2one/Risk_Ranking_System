@@ -10,6 +10,7 @@ from datetime import datetime
 from urlparse import urlparse #used to extract the URL domain
 import re #used for regular expressions
 import os
+import tldextract
 
 import linesClass
 import generalMethods as  gm
@@ -189,7 +190,7 @@ class TrxFunctions(object):
 
         return (isRisky,risk_level['Mal'],risk_level['Copyright'],risk_level['Keyword'])
     
-    def createMalDomainsHash(self, malDomainsFile):
+'''    def createMalDomainsHash(self, malDomainsFile):
         global malwareDomains
         with open(malDomainsFile,"r") as myFile:      
             for line in myFile:
@@ -209,7 +210,7 @@ class TrxFunctions(object):
         
         # this is for future runs- we will be able to read the list from a file:
         copyrightDomains = writeHashToFile(copyrightDomains,'/home/michal/Desktop/copyDomainsLast')
-        return None
+        return None'''
 
 def createRiskHashes(malSource,googleSource,ignore_domain_list=[]):
     # ignore_domain_list is a list of domains which will be ignored 
@@ -291,7 +292,7 @@ def writeHashWithValuesToFile(hashName,fileName):
     return 
  
 
-def getDomainFromRequestedSite(url): 
+def getDomainFromRequestedSite_old(url): 
     
     if(url):
         if(re.compile('\[|\]').search(url) != None):   
@@ -306,6 +307,12 @@ def getDomainFromRequestedSite(url):
                 parsed = tmpParsed   
                         
             return parsed.hostname
+    else: return '' 
+    
+def getDomainFromRequestedSite(url): 
+    if(url):
+        #return tldextract.extract(url).domain #without "www." or ".com" or "org.il" etc
+        return tldextract.extract(url).registered_domain #without "www." or ".com" or "org.il" etc
     else: return '' 
     
 def isRequestedSiteHttps(url): #returns 1 if https, 0 otherwise
