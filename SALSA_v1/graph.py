@@ -194,7 +194,7 @@ class domains_graph():
 
     
     
-    def run_hits(self,hits_type='hits_scipy', max_iter=100, tol=1e-08, nstart=None, normalized=True, debug_mode=False):
+    def run_hits(self,hits_type='hits_scipy', max_iter=100, tol=1e-08, nstart=None, normalized=True):
         '''# IMPORTANT: the forced ergodicity is made on the graph itself and not on it's copy!!!!
         self.add_CN_full_conections(eps=gm.epsilon)
         nx.stochastic_graph(self.G, copy=False)
@@ -221,9 +221,6 @@ class domains_graph():
                 print '\t@@@ HITS: max iterations still not working- returns empty dicts!!! '
                 h = a = {}
         
-        '''if debug_mode:
-            print '--- run_hits: sum of h- '+str(sum(h.values()))+'\n--- run_hits: sum of a- '+str(sum(a.values())); sys.stdout.flush()
-        '''
         self.add_nodes_attr(self.n_attr.hits_hub_score, h)
         self.add_nodes_attr(self.n_attr.hits_auth_score, a)
         return h,a
@@ -243,10 +240,10 @@ class domains_graph():
         self.add_nodes_attr(attr_name, PR)
         return None,PR  # the first is None- cause when calling this method we assume there might be hubs scores as well...
        
-    def run_salsa(self,salsa_type='salsa_per_class', normalized=True, nstart=None, tol=10e-8, max_iter=1000, debug_mode=False):
+    def run_salsa(self,salsa_type='salsa_per_class', normalized=True, nstart=None, tol=10e-8, max_iter=1000):
         run = {'iterative':'salsa.salsa(self.G, max_iter, tol, nstart, normalized)', \
                'eigenvector':'salsa.salsa_numpy(self.G, normalized)', \
-               'sparse_eigenvector':'salsa.salsa_sparse(self.G,normalized=True,debug_mode=debug_mode)',\
+               'sparse_eigenvector':'salsa.salsa_sparse(self.G,normalized=True)',\
                'sparse_iterrative':'salsa.salsa_scipy(self.G, max_iter, tol, normalized)',\
                'salsa_per_class':'salsa.salsa_per_class(self.G)'}  #'sparse_iterrative':'salsa.salsa_scipy(self.G, max_iter, tol, nstart, normalized)'}
         h, h_classes, a, a_classes = eval(run[salsa_type])

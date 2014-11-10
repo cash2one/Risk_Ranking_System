@@ -59,20 +59,6 @@ def write_dict_ordered_by_value_to_file(d,fn):
     f.close()
     return
 
-def write_union_of_dicts_ordered_by_value_to_file_OLD(d1,d2,d3,fn):
-    # d1 = dict where the output is order by its values!
-    # d2 = dict where its value is added to the ordered d1 (as the input)
-    # fn = file name (with full path) for the output
-    i=1
-    f=open(fn, "wb")
-    w = csv.writer(f)
-    for key, val in sorted(d1.items(), key=itemgetter(1), reverse=True):
-        w.writerow([i, key, val, d2[key], '#', d3[key]])
-        #w.writerow([i, key, round(val,4), round(d2[key],4), '#', round(d3[key],4)])
-        i+=1
-    f.close()
-    return
-
 def write_union_of_dicts_ordered_by_value_to_file(d,dicts_list,fn):
     # d = dict where the output is order by its values!
     # dicts_list = list of all dicts where its value is added to the ordered d (as the input)
@@ -101,6 +87,7 @@ def writeMatrixToFile(filePath, matrix):
     target.close();
                 
     return 
+
 
 def l1_norm_vector(V):
     # V is array
@@ -174,6 +161,7 @@ def check_if_stochastic_matrix(np_mat):
             break
     return is_stochastic    
         
+
 def write_graph_to_file(G,fn):
     import pickle
     pickle.dump(G, open(fn, 'w'))
@@ -295,11 +283,11 @@ def write_dict_of_dicts_to_file(d,fn,first_col_name='domain'):
             w.writerow([k]+list(zip(*sorted(d[k].items()))[1]))
     return
 
-def get_general_file_path(run_mode,file_name,evaluated_domain_list=None,dir='tmp'):       
+def get_general_file_path(run_mode,file_name,post_list=None,dir='tmp'):       
     postfix = ''
-    if evaluated_domain_list:
-        evaluated_domains_str = '_'.join(evaluated_domain_list)
-        postfix = ''.join(['_without_',evaluated_domains_str])
+    if post_list:
+        #post_list_str = '_'.join(post_list)
+        postfix = ''.join(['_','_'.join(post_list)])#''.join(['_without_',evaluated_domains_str])
     
     main_dir = '/home/michal/SALSA_files'
     return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,'.csv'])])

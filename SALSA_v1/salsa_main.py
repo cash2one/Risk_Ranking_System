@@ -19,36 +19,32 @@ import sys
 
 #import matplotlib.pyplot as plt                 # For the graph plot
 
-def get_input_files(run_mode,evaluated_domain_list=None):
+def get_input_files(run_mode,fold=None):
     import preproc_main as preproc
-    transitions, domain_risk = preproc.get_output_files(run_mode, evaluated_domain_list)[-2:]   # get last 2 elements returned from get_output_files
+    transitions, domain_risk = preproc.get_output_files(run_mode, fold)[-2:]   # get last 2 elements returned from get_output_files
     return transitions, domain_risk
  
 def get_output_files(run_mode,alg,evaluated_domain_list=None):       
-    postfix = ''
-    if evaluated_domain_list:
-        evaluated_domains_str = '_'.join(evaluated_domain_list)
-        postfix = ''.join(['_without_',evaluated_domains_str])
     
-    main_dir = '/home/michal/SALSA_files/outputs/'
-
     if 'pagerank' not in alg:   #hits or salsa
-        output_hubs_file = ''.join([main_dir,run_mode,'/',alg,'_hubs',postfix,'.csv'])
-        output_authorities_file = ''.join([main_dir,run_mode,'/',alg,'_authorities',postfix,'.csv'])
+        output_hubs_file = gm.get_general_file_path(run_mode, '_'.join([alg,'hub']), post_list=evaluated_domain_list, dir='outputs')
+        output_authorities_file = gm.get_general_file_path(run_mode, '_'.join([alg,'auth']), post_list=evaluated_domain_list, dir='outputs')
     else:   #pagerank or inverse_pagerank
         output_hubs_file = None
-        output_authorities_file = ''.join([main_dir,run_mode,'/',alg,postfix,'.csv'])
+        output_authorities_file = gm.get_general_file_path(run_mode, alg, post_list=evaluated_domain_list, dir='outputs')
 
     return output_hubs_file, output_authorities_file
 
 
-
-def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):                
+def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None,fold=None):                
     #IMPORTANT: algorithms_list- inverse RP changes the graph itself, hence should be last
-    print '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\nALGORITHMS MAIN: \tevaluated domains- '+str(evaluated_domain_list)+'\nalg list- '+str(algorithms_list)+', run mode- '+run_mode+', STRAT -----> ' + str(datetime.now()); sys.stdout.flush(); startTime = datetime.now()                        
+    print '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\nALGORITHMS MAIN: \nFOLD- ',fold,',evaluated domains- ',evaluated_domain_list,'\nalg list- ',algorithms_list,', run mode- ',run_mode,', STRAT -----> ' ,datetime.now(); sys.stdout.flush(); startTime = datetime.now()                        
     
-    transitions_dict_path, domain_risk_dict_path = get_input_files(run_mode,evaluated_domain_list)
-    
+    if fold:    f_postfix = ['fold',fold]
+    else:       f_postfix = None
+
+    transitions_dict_path, domain_risk_dict_path = get_input_files(run_mode,fold)#evaluated_domain_list)
+
     G = graph.domains_graph(transitions_dict_path)
     
     G.add_nodes_attr(G.n_attr.risk, gm.readDict(domain_risk_dict_path))
@@ -62,22 +58,18 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):
     print 'num of nodes: ' + str(G.G.number_of_nodes()) + '\nnum of edges: ' + str(G.G.number_of_edges()); sys.stdout.flush()
     '''
     
-    if run_mode == 'small_test':
-        debug_flag = True
-    else: # big_test or real_run mode
-        debug_flag = False
-    
-    run = {'salsa':'G.run_salsa(salsa_type=\'salsa_per_class\',debug_mode=debug_flag)', \
-               'hits':'G.run_hits(debug_mode=debug_flag)', \
+    run = {'salsa':'G.run_salsa(salsa_type=\'salsa_per_class\')', \
+               'hits':'G.run_hits()', \
                'pagerank':'G.run_pagerank()',\
                'inverse_pagerank':'G.run_pagerank(inverse=True)'}
+    
     for alg in algorithms_list:
         h,a = eval(run[alg])
-        hubs_file, authorities_file = get_output_files(run_mode,alg,evaluated_domain_list)
+        hubs_file, authorities_file = get_output_files(run_mode,alg,f_postfix)#evaluated_domain_list)
         G.evaluate_algorithem(auth_fn=authorities_file, hub_fn=hubs_file, alg_type=alg)
         
         # write a and h dicts to files using pickle:
-        a_fn = gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),evaluated_domain_list)
+        a_fn = gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),f_postfix)#evaluated_domain_list)
         gm.write_object_to_file(a, a_fn)
         #G.alg_histogram(alg)
         print '\n--- main: '+alg+' run + evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
@@ -86,7 +78,7 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None):
         out_fn = gm.get_general_file_path(run_mode,file_name='eval_out_sum',dir='outputs')
         G.write_eval_results_to_csv(evaluated_node=n,fn=out_fn)
     # combined lower percentage score dict:
-    G.create_combined_scores(run_mode, algorithms_list, evaluated_domain_list)   
+    #G.create_combined_scores(run_mode, algorithms_list, evaluated_domain_list)   
     G.clear(); tmpTime = datetime.now()    #clean the graph and all it's attributes for (optional) next run
     # combined pure risk rank score dict:
     #generate_combined_scores(run_mode,algorithms_list,evaluated_domain_list)

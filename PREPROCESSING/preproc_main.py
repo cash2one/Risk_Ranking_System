@@ -50,8 +50,8 @@ def get_input_files(runType):
                  '/'.join([main_dir,'2/stats_12_03_10/part-00008']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00009']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00010'])] '''
-        #Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001'])]  # 19673 domains, 6 malwares, 47593 edges
-        '''NANCY FILES:'''
+        Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001'])]  # 19673 domains, 6 malwares, 47593 edges
+        '''NANCY FILES:
         Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00000']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00048']),\
                  '/'.join([main_dir,'2/stats_12_03_11/part-00001']),\
@@ -62,7 +62,7 @@ def get_input_files(runType):
                  '/'.join([main_dir,'2/stats_12_03_16/part-00000']),\
                  '/'.join([main_dir,'150/stats_12_03_15/part-00000']),\
                  '/'.join([main_dir,'150/stats_12_03_15/part-00001']),\
-                 '/'.join([main_dir,'150/stats_12_03_10/part-00049']) ]
+                 '/'.join([main_dir,'150/stats_12_03_10/part-00049']) ]'''
         #Files = [ '/data/150/stats_12_03_10/part-00000']
         #Files = [ '/data/2/stats_12_03_10/part-00001','/data/2/stats_12_03_11/part-00001','/data/2/stats_12_03_12/part-00001','/data/2/stats_12_03_13/part-00001']
     
@@ -72,31 +72,23 @@ def get_input_files(runType):
     
     return malwareDomainsFile, copyrightDomainsFile, Files
     
-def get_output_files(runType,evaluated_domain_list=None):
-    postfix = ''
-    if evaluated_domain_list:
-        evaluated_domains_str = '_'.join(evaluated_domain_list)
-        postfix = ''.join(['_without_',evaluated_domains_str])
-    
-    main_dir = '/home/michal/SALSA_files/tmp/'
-    '''out_dir = {'ginna_big_test':'big_test/',\
-               'ginna_small_test':'small_test/',\
-               'ginna':'real_run/'}'''
-    
-    processed_file= ''.join([main_dir,runType,'/input_list',postfix,'.csv'])
-    output_users_risk_dict_path = ''.join([main_dir,runType,'/users_risk_dict',postfix,'.csv'])
-    output_transitions_dict_path = ''.join([main_dir,runType,'/transitions_dict',postfix,'.csv'])
-    output_domain_risk_dict_path = ''.join([main_dir,runType,'/domains_risk_dict',postfix,'.csv'])
+def get_output_files(run_mode,fold=None):
+    if fold:    f_postfix = ['fold',fold]
+    else:       f_postfix = None#[]
+    processed_file= gm.get_general_file_path(run_mode, 'input_list',post_list=f_postfix)
+    output_users_risk_dict_path = gm.get_general_file_path(run_mode, 'users_risk_dict', post_list=f_postfix)
+    output_transitions_dict_path = gm.get_general_file_path(run_mode, 'transitions_dict', post_list=f_postfix)
+    output_domain_risk_dict_path = gm.get_general_file_path(run_mode, 'domains_risk_dict', post_list=f_postfix)
 
     return processed_file, output_users_risk_dict_path, output_transitions_dict_path, output_domain_risk_dict_path
-    
+        
 
-def main(run_mode, evaluated_domain_list=None,wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.):
+def main(run_mode, evaluated_domain_list=None,wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.,fold=None):
     print 'PREPROC: run mode- '+run_mode+', STRAT -----> ' + str(datetime.now()); sys.stdout.flush(); startTime = datetime.now()
     
     # initialize file for the  process
     malwareDomainsFile, copyrightDomainsFile, Files = get_input_files(run_mode)
-    processedInputFile, users_risk_dict_path, transitions_dict_path, domain_risk_dict_path = get_output_files(run_mode,evaluated_domain_list)
+    processedInputFile, users_risk_dict_path, transitions_dict_path, domain_risk_dict_path = get_output_files(run_mode,fold)#evaluated_domain_list)
     
     tmpTime = datetime.now()
     trxFunc.createRiskHashes(malwareDomainsFile,copyrightDomainsFile,ignore_domain_list=evaluated_domain_list)
