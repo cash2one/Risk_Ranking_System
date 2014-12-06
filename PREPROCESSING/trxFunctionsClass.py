@@ -230,7 +230,7 @@ def createRiskHashes(malSource,googleSource,ignore_domain_list=[]):
         #DEBUG: writeHashToFile('copyrightDomains','/home/michal/Desktop/copyrightDomainsForTest')
         gm.saveDict(copyright_file_path, copyrightDomains)
         
-    if ignore_domain_list:  #for evaluation cases- this won't be None
+    if len(ignore_domain_list):  #for evaluation cases- this won't be zero
         for d in ignore_domain_list:    
             if d in malwareDomains:
                 malwareDomains.pop(d)

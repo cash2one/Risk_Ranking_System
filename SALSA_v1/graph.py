@@ -9,6 +9,7 @@ import salsa
 import generalMethods as gm
 
 
+
 class edge_attributes():
     good = 'g'
     bad = 'b'
@@ -118,13 +119,20 @@ class buckets():
         
         return
         
-    
+
 class domains_graph():
     G = nx.DiGraph              # directed graph: node = domain, edge(A,B) = user passed from domain A to B
     CN = 'CN'                   # Central Node (first/last domain in each session connected from/to this node) 
     e_attr = edge_attributes()  # edge_attributes instantiation (for coding purposes only)
     n_attr = node_attributes()  # node_attributes instantiation (for coding purposes only)
-    b = buckets()               # buckets instantiation
+    #b = buckets()               # buckets instantiation
+    # useful dicts for coding
+    alg_auth_Lpct = {'salsa':n_attr.salsa_auth_l_pct, \
+                     'hits':n_attr.hits_auth_l_pct, \
+                     'pagerank':n_attr.pagerank_l_pct,\
+                     'inverse_pagerank':n_attr.inverse_pagerank_l_pct}            
+    alg_hub_Lpct = {'salsa':n_attr.salsa_hub_l_pct, \
+                    'hits':n_attr.hits_hub_l_pct}
     
     def __init__(self, transitions_dict_file):
         #G = nx.from_dict_of_dicts(Transitions_Dict, create_using, multigraph_input)
@@ -225,7 +233,7 @@ class domains_graph():
         self.add_nodes_attr(self.n_attr.hits_auth_score, a)
         return h,a
 
-    def run_pagerank(self,inverse=False, pagerank_type='pagerank_scipy', alpha=0.85, personalization=None, max_iter=100, tol=1e-06, weight='weight'):
+    def run_pagerank(self,inverse=False, pagerank_type='pagerank_scipy', alpha=0.85, personalization=None, max_iter=100, tol=1e-06, weight='weight',nstart=None):
         if inverse: # if inverse pagerank (backwards direction)
             #  IMPORTANT: reverse the graph itself and not it's copy!!!!!
             self.G.reverse(copy=False)
@@ -251,11 +259,6 @@ class domains_graph():
         self.add_nodes_attr(self.n_attr.salsa_auth_score, a)
         self.add_nodes_attr(self.n_attr.salsa_hub_class, h_classes)
         self.add_nodes_attr(self.n_attr.salsa_auth_class, a_classes)
-        '''# Print output for Nancy:
-        NANCY_auth_out = '/home/michal/SALSA_files/tmp/real_run/NANCY_salsa_auth'
-        NANCY_hub_out = '/home/michal/SALSA_files/tmp/real_run/NANCY_salsa_hub'
-        gm.saveDict(NANCY_auth_out,a)
-        gm.saveDict(NANCY_hub_out,h)'''
         return h,a
     
     
@@ -290,10 +293,6 @@ class domains_graph():
             auth_class = None
             hub_class = None
             
-        '''self.score_evaluation(node_auth_score_attr,node_auth_bucket_attr,\
-                              node_auth_u_pct_attr,node_auth_l_pct_attr,auth_fn)
-        self.score_evaluation(node_hub_score_attr,node_hub_bucket_attr,\
-                              node_hub_u_pct_attr,node_hub_l_pct_attr,hub_fn)'''
         self.score_evaluation(auth_score,auth_u_pct,auth_l_pct,auth_fn,auth_class)
         self.score_evaluation(hub_score,hub_u_pct,hub_l_pct,hub_fn,hub_class)
         return
@@ -314,8 +313,6 @@ class domains_graph():
             #node_bucket_attr = self.n_attr.inverse_pagerank_bucket
             u_pct_attr = self.n_attr.inverse_pagerank_u_pct
             l_pct_attr = self.n_attr.inverse_pagerank_l_pct
-        '''self.score_evaluation(node_score_attr,node_bucket_attr,\
-                              node_u_pct_attr,node_l_pct_attr,fn=fn)'''
         self.score_evaluation(score_attr,u_pct_attr,l_pct_attr,fn)
         return
     
@@ -354,28 +351,7 @@ class domains_graph():
                'inverse_pagerank':'self.evaluate_single_score_algorithms(auth_fn,alg_type=\'inverse_pagerank\')'}
         
         eval(run[alg_type])
-        
-        '''
-        # Add the salsa_auth_position and salsa_hub_position (relative rank position) attr values to all nodes:
-        self.add_nodes_attr(self.n_attr.salsa_auth_position, self.get_nodes_position_dict_from_scores_dict(auth_scores_dict)) 
-        self.add_nodes_attr(self.n_attr.salsa_hub_position, self.get_nodes_position_dict_from_scores_dict(hub_scores_dict))
-        
-        #DEBUG:
-        auth_pos_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_auth_position)
-        hub_pos_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_hub_position)
-        gm.write_union_of_dicts_ordered_by_value_to_file(auth_pos_dict, hub_pos_dict, init_risk_dict, auth_fn)'''
-        '''
-        init_risk_dict = self.get_nodes_attr_val_dict(self.n_attr.risk)
-        auth_scores_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_auth_score)
-        self.split_to_buckets(20,d=auth_scores_dict, bucket_attr_name=self.n_attr.salsa_auth_bucket)
-        auth_bucket_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_auth_bucket)
-        gm.write_union_of_dicts_ordered_by_value_to_file(auth_scores_dict, auth_bucket_dict, init_risk_dict, auth_fn)
-        
-        hub_scores_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_hub_score)
-        self.split_to_buckets(20,d=hub_scores_dict, bucket_attr_name=self.n_attr.salsa_hub_bucket)
-        hub_bucket_dict = self.get_nodes_attr_val_dict(self.n_attr.salsa_hub_bucket)
-        gm.write_union_of_dicts_ordered_by_value_to_file(hub_scores_dict, hub_bucket_dict, init_risk_dict, hub_fn)
-        '''
+
         return
     
     def alg_histogram(self,alg):
@@ -394,16 +370,17 @@ class domains_graph():
         # attr = (string) the node attribute which the combined score is based on
         dicts = []
         if attr == 'Lpct':
+            ''' MOVED TO BE A MEMBER!!!
             alg_auth_attr = {'salsa':self.n_attr.salsa_auth_l_pct, \
                'hits':self.n_attr.hits_auth_l_pct, \
                'pagerank':self.n_attr.pagerank_l_pct,\
                'inverse_pagerank':self.n_attr.inverse_pagerank_l_pct}
             
             alg_hub_attr = {'salsa':self.n_attr.salsa_hub_l_pct, \
-               'hits':self.n_attr.hits_hub_l_pct}
+               'hits':self.n_attr.hits_hub_l_pct}'''
                 
             for alg in alg_list:
-                dicts.append(self.get_nodes_attr_val_dict(alg_auth_attr[alg]))   # create a dict of the domains l_pct and push it to dicts list
+                dicts.append(self.get_nodes_attr_val_dict(self.alg_auth_Lpct[alg]))#attr[alg]))   # create a dict of the domains l_pct and push it to dicts list
             dicts.append(self.get_nodes_attr_val_dict(self.n_attr.risk))   
         
         for comb_type in ['max','avg','top3_avg','top2_avg']:
@@ -412,7 +389,7 @@ class domains_graph():
         
         # create a new high level score for hits and salsa (max of auth/hub score):
         tmp_dicts = []
-        for k,v in alg_hub_attr.items():    # for each alg [salsa, hits]
+        for k,v in self.alg_hub_Lpct.items():#attr.items():    # for each alg [salsa, hits]
             tmp_dicts.append( dicts.pop( alg_list.index(k) ) )  # add auth scores dict
             tmp_dicts.append( self.get_nodes_attr_val_dict(v) )
             out_file = gm.get_general_file_path(run_mode,'_'.join([k,'max',attr]),evaluated_domain_list,dir='outputs')
@@ -448,7 +425,7 @@ class domains_graph():
 
 
     
-    def get_nodes_position_dict_from_scores_dict(self,d):
+    '''def get_nodes_position_dict_from_scores_dict(self,d):
         # d = dict of nodes and its scores (of one of the algorithems- SALSA/HITS/PageRank)
         from operator import itemgetter
         position_dict = {}
@@ -496,9 +473,6 @@ class domains_graph():
                     buckets.setdefault(cur_bucket,{}).setdefault('elements',[k])    #init new bucket
             else:   #last bucket- highest scores
                 buckets[cur_bucket]['elements'].append(k)
-
-            '''if bucket_attr_name: #if bucket_attr_name is not None- need to update the node relevant bucket attribute
-                self.G.node[k][bucket_attr_name] = cur_bucket'''
                 
         self.b.update_buckets_keys()    # force the buckets to start from 0 (if not already)        
         # update buckets with general info:
@@ -508,29 +482,36 @@ class domains_graph():
         if bucket_attr_name:
             domain_bucket_dict = self.b.create_domain_bucket_dict()
             self.add_nodes_attr(attr_name=bucket_attr_name, attr_val_dict=domain_bucket_dict)
-        '''if len(buckets[b]['elements']): # if bucket isn't empty
-                buckets[b]['min_val'] = d[buckets[b]['elements'][0]]    # update min value
-                buckets[b]['max_val'] = d[buckets[b]['elements'][-1]]    # update max value
-                buckets[b]['num_of_elements'] = len(buckets[b]['elements'])
-                buckets[b]['bucket_absolut_range'] = len(buckets[b]['elements'])
-            else:   # bucket is empty
-                buckets[b]['min_val'] = None
-                buckets[b]['max_val'] = None
-                buckets[b]['num_of_elements'] = 0
-        '''
-        
+ 
+        return #buckets '''
+       
+    def evaluation(self,algs_list,eval_nodes_list=None,fn=None):
+        import stats
+        eval_algs_list = []
+        Lpct_dicts_list = []
+        if not eval_nodes_list:    # eval_nodes_list is None
+            risk = self.get_nodes_attr_val_dict(self.n_attr.risk)
+            eval_nodes_list = [ k for k,v in risk.items() if v == 1 ]
 
+        for alg in algs_list:
+            Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_auth_Lpct[alg]]) for k in eval_nodes_list))
+            eval_algs_list.append('_'.join([alg,'auth']))
+            if alg in self.alg_hub_Lpct:    #hits or salsa
+                Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_hub_Lpct[alg]]) for k in eval_nodes_list))
+                eval_algs_list.append('_'.join([alg,'hub']))
+        s = stats.stats(eval_algs_list,Lpct_dicts_list) # stats instantiation
+        s.calc_stats()
+        if fn: s.export_info(fn=fn,raw_flag=True)
+        return s
+    
+    def export_domains_for_strat_Kfolds(self,dir):
+        #d = {k:0 for k in self.G.nodes()}
+        d = dict(zip(self.G.nodes(),[0]*self.G.number_of_nodes()))
+        for k,v in self.get_nodes_attr_val_dict(self.n_attr.risk).items():
+            if v == 1: d[k] = 1
+        gm.write_object_to_file(d,'/'.join([dir,'domains_risk.csv']))
         
-        return #buckets 
-    
-    def write_eval_results_to_csv(self,evaluated_node,fn):
-        import csv
-        f = open(fn, "a")
-        w = csv.writer(f)
-        attrs,vals = zip(*sorted(self.G.node[evaluated_node].items()))
-        w.writerow([evaluated_node]+list(attrs))#self.G.node[evaluated_node] is dict!
-        w.writerow([evaluated_node]+list(vals))
-        f.close()
+        mal_d = [k for k,v in d.items() if v]
+        gm.write_list_to_file(mal_d,'/'.join([dir,'src_mal_domains.csv']))
+        
         return
-            
-    

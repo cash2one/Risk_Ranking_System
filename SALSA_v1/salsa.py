@@ -482,7 +482,7 @@ def salsa_per_class(G):
     print '\t~~~~~~ salsa_per_class ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
     authorities_dict, auth_class_dict = calc_salsa_per_class(G, rank_type='authority')
     hubs_dict, hub_class_dict = calc_salsa_per_class(G, rank_type='hub')
-    print '\n\t\t--- salsa_per_class took: '+str(datetime.now()-startTime); sys.stdout.flush()
+    print '\n\t\t--- salsa_per_class took: ',datetime.now()-startTime; sys.stdout.flush()
     return hubs_dict, hub_class_dict, authorities_dict, auth_class_dict
 
 def calc_salsa_per_class(G, rank_type):
@@ -499,7 +499,7 @@ def calc_salsa_per_class(G, rank_type):
     gm.write_graph_to_file(G_new, out_file)'''
     #x=scipy.ones((n,1))/n  # initial guess
     isolates = nx.isolates(G_new)   # isolate node is a node with in_deg=out_deg=0
-    print '--- calc_salsa_per_class: num of isolates- '+str(len(isolates))+', out of- '+str(G_new.number_of_nodes())+' nodes ('+str(float(len(isolates))/G_new.number_of_nodes())+'%)'; sys.stdout.flush()
+    print '--- calc_salsa_per_class: num of isolates- ',len(isolates),', out of- ',G_new.number_of_nodes(),' nodes (',float(len(isolates))/G_new.number_of_nodes(),'%)'; sys.stdout.flush()
     num_of_not_isolates = G_new.number_of_nodes() - len(isolates)
     scores_dict = {}
     tmpTime = datetime.now()
@@ -507,7 +507,7 @@ def calc_salsa_per_class(G, rank_type):
     print '--- calc_salsa_per_class: separate to classes took- '+str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
     #remove classes of isolated nodes:   
     classes[:] = [ c for idx,c in enumerate(classes) if c.nodes()[0] not in isolates ]
-    print '--- calc_salsa_per_class: clean classes from isolates took- '+str(datetime.now()-tmpTime); sys.stdout.flush(); 
+    print '--- calc_salsa_per_class: clean classes from isolates took- ',datetime.now()-tmpTime; sys.stdout.flush(); 
     
     num_of_classes = 0
     domain_class_dict = {}
@@ -523,13 +523,13 @@ def calc_salsa_per_class(G, rank_type):
             d = G.nodes()[k]
             scores_dict[d] = v
             domain_class_dict[d] = num_of_classes
-    print '--- calc_salsa_per_class: num of classes (NOT including isolates)- '+str(num_of_classes)
+    print '--- calc_salsa_per_class: num of classes (NOT including isolates)- ',num_of_classes
     for i in isolates:
         d = G.nodes()[i]
         scores_dict[d] = 0
         domain_class_dict[d] = 0 # class zero represents the isolates
     #print authority_dict
-    print '--- calc_salsa_per_class took: '+str(datetime.now()-startTime); sys.stdout.flush()
+    print '--- calc_salsa_per_class took: ',datetime.now()-startTime; sys.stdout.flush()
 
     return scores_dict, domain_class_dict
 

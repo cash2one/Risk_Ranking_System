@@ -15,6 +15,7 @@ from sklearn.utils.arpack import eigs
 from sklearn.utils.arpack import eigsh
 
 
+
 #from datetime import datetime
 #import graph
 #import DEBUG_func as DEBUG
@@ -539,6 +540,23 @@ def plotting_fine_tuning():
     gm.histogram_of_dict(a)
     return
 
+def test_stats():
+    import stats as st
+    alg_list = ['alg1','alg2','alg3']
+    algs_dicts_list = [{'D1':0,'D2':32.1,'D3':97.43},\
+                       {'D1':98.09,'D2':85.3,'D3':17.53},\
+                       {'D1':45.6,'D2':59.1,'D3':0}]
+    s = st.stats(alg_list,algs_dicts_list)
+    s.calc_stats()
+    s.export_info(fn='/home/michal/SALSA_files/tmp/small_test/test',raw_flag=True)
+    algs_dicts_list_2 = [{'D10':0,'D20':32.1,'D30':97.43},\
+                         {'D10':98.09,'D20':85.3,'D30':17.53},\
+                         {'D10':45.6,'D20':59.1,'D30':0}]
+    s2 = st.stats(alg_list,algs_dicts_list_2)
+    #alldicts = reduce(set.union, map(set, map(dict.items, algs_dicts_list_2)))
+    st.stats_union([s,s2], fn='/home/michal/SALSA_files/tmp/small_test/test', raw_flag=True)
+    return
+
 def main():
     #fn = '/home/michal/SALSA_files/test_matrix'
     #gm.writeMatrixToFile(fn, Lden)
@@ -550,7 +568,8 @@ def main():
     #test_sparse_eig_methods()
     #test_eig_methods()
     #test_networkx_methods()
-    plotting_fine_tuning()
+    #plotting_fine_tuning()
+    test_stats()
     return
 
 main()

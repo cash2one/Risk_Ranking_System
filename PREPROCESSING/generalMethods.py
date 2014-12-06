@@ -9,6 +9,13 @@ from operator import itemgetter
 
 
  
+def write_list_to_file(l,fn):
+    f=open(fn, "wb")
+    w = csv.writer(f)
+    for element in l:
+        w.writerow([element])
+    f.close()
+
 def saveDict(fn,dict_rap):
     f=open(fn, "wb")
     w = csv.writer(f)
@@ -162,14 +169,14 @@ def check_if_stochastic_matrix(np_mat):
     return is_stochastic    
         
 
-def write_graph_to_file(G,fn):
+'''def write_graph_to_file(G,fn):
     import pickle
     pickle.dump(G, open(fn, 'w'))
     return
 
 def read_graph_from_file(fn):
     import pickle
-    return pickle.load(open(fn))
+    return pickle.load(open(fn))'''
 
 def write_object_to_file(obj,fn):
     import pickle
@@ -291,5 +298,12 @@ def get_general_file_path(run_mode,file_name,post_list=None,dir='tmp'):
     
     main_dir = '/home/michal/SALSA_files'
     return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,'.csv'])])
+
+def calc_elements_greater_than_threshold(l,threshold,pct_flag=False):
+    ans = sum(i>=threshold for i in l)
+    if pct_flag:    # the return val is in percentage units
+        return float(ans)/len(l)
+    else:   # the returned val is the actual number of elements
+        return ans
 
 epsilon = 1e-4 #0.0001

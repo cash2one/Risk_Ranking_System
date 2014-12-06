@@ -36,9 +36,9 @@ def get_output_files(run_mode,alg,evaluated_domain_list=None):
     return output_hubs_file, output_authorities_file
 
 
-def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None,fold=None):                
+def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None,fold=None,nstart_flag=False):                
     #IMPORTANT: algorithms_list- inverse RP changes the graph itself, hence should be last
-    print '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\nALGORITHMS MAIN: \nFOLD- ',fold,',evaluated domains- ',evaluated_domain_list,'\nalg list- ',algorithms_list,', run mode- ',run_mode,', STRAT -----> ' ,datetime.now(); sys.stdout.flush(); startTime = datetime.now()                        
+    print '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\nALGORITHMS MAIN: \nFOLD- ',fold,',evaluated domains- ',evaluated_domain_list,'\nalg list- ',algorithms_list,',\nrun mode- ',run_mode,'nstart_flag- ',nstart_flag,', STRAT -----> ' ,datetime.now(); sys.stdout.flush(); startTime = datetime.now()                        
     
     if fold:    f_postfix = ['fold',fold]
     else:       f_postfix = None
@@ -57,11 +57,13 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None,fold=
     DEBUG.print_num_of_nodes_with_out_deg_0(G.G)
     print 'num of nodes: ' + str(G.G.number_of_nodes()) + '\nnum of edges: ' + str(G.G.number_of_edges()); sys.stdout.flush()
     '''
-    
+    risk_dict = None
+    if nstart_flag:
+        risk_dict = G.get_nodes_attr_val_dict(G.n_attr.risk)
     run = {'salsa':'G.run_salsa(salsa_type=\'salsa_per_class\')', \
-               'hits':'G.run_hits()', \
-               'pagerank':'G.run_pagerank()',\
-               'inverse_pagerank':'G.run_pagerank(inverse=True)'}
+               'hits':'G.run_hits(hits_type=\'hits\',nstart=risk_dict)', \
+               'pagerank':'G.run_pagerank(pagerank_type=\'pagerank\',personalization=risk_dict)',\
+               'inverse_pagerank':'G.run_pagerank(pagerank_type=\'pagerank\',personalization=risk_dict,inverse=True)'}
     
     for alg in algorithms_list:
         h,a = eval(run[alg])
@@ -73,19 +75,28 @@ def main(run_mode='real_run',algorithms_list=[],evaluated_domain_list=None,fold=
         gm.write_object_to_file(a, a_fn)
         #G.alg_histogram(alg)
         print '\n--- main: '+alg+' run + evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
-    for n in evaluated_domain_list:
+    '''for n in evaluated_domain_list:
         #out_fn = get_general_file_path(run_mode,file_name='eval_out',evaluated_domain_list=[n],dir='outputs')
         out_fn = gm.get_general_file_path(run_mode,file_name='eval_out_sum',dir='outputs')
-        G.write_eval_results_to_csv(evaluated_node=n,fn=out_fn)
-    # combined lower percentage score dict:
-    #G.create_combined_scores(run_mode, algorithms_list, evaluated_domain_list)   
-    G.clear(); tmpTime = datetime.now()    #clean the graph and all it's attributes for (optional) next run
+        G.write_eval_results_to_csv(evaluated_node=n,fn=out_fn)'''
+    #out_fn = gm.get_general_file_path(run_mode,file_name='eval_out',dir='outputs')
+    eval_obj = G.evaluation(algorithms_list, evaluated_domain_list)#,out_fn)    
     # combined pure risk rank score dict:
     #generate_combined_scores(run_mode,algorithms_list,evaluated_domain_list)
-    print '\n--- main: combined scores generation and evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush();
+    # combined lower percentage score dict:
+    #G.create_combined_scores(run_mode, algorithms_list, evaluated_domain_list)   
     
+    # In case of 'full run' (no evaluated_domain_list) we shall create output file of the mal domains and all domains with its rank as 0/1:
+    if evaluated_domain_list==None or not len(evaluated_domain_list):
+        G.export_domains_for_strat_Kfolds('/home/michal/SALSA_files/tmp/small_test/mal_d')
+    
+    G.clear(); tmpTime = datetime.now()    #clean the graph and all it's attributes for (optional) next run
+    
+    
+    
+    print '\n--- main: evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush();
     print '\nALGORITHMS END.\tTotal run time: ' + str(datetime.now()-startTime); sys.stdout.flush()
-    return
+    return eval_obj
 
 
 

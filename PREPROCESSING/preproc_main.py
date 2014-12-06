@@ -84,8 +84,8 @@ def get_output_files(run_mode,fold=None):
         
 
 def main(run_mode, evaluated_domain_list=None,wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.,fold=None):
-    print 'PREPROC: run mode- '+run_mode+', STRAT -----> ' + str(datetime.now()); sys.stdout.flush(); startTime = datetime.now()
-    
+    print 'PREPROC: run mode- ',run_mode,', STRAT -----> ',str(datetime.now()); sys.stdout.flush(); startTime = datetime.now()
+    print 'wo_users - ',wo_users,'\nlink_ref - ',link_ref,', link_weight - ',link_weight,'\nredirect_ref - ',redirect_ref,', redirect_weight - ',redirect_weight,'\n\n'; sys.stdout.flush()
     # initialize file for the  process
     malwareDomainsFile, copyrightDomainsFile, Files = get_input_files(run_mode)
     processedInputFile, users_risk_dict_path, transitions_dict_path, domain_risk_dict_path = get_output_files(run_mode,fold)#evaluated_domain_list)
