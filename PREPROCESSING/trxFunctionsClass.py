@@ -312,7 +312,13 @@ def getDomainFromRequestedSite_old(url):
 def getDomainFromRequestedSite(url): 
     if(url):
         #return tldextract.extract(url).domain #without "www." or ".com" or "org.il" etc
-        return tldextract.extract(url).registered_domain #without "www." or ".com" or "org.il" etc
+        domain = tldextract.extract(url).registered_domain #without "www." or ".com" or "org.il" etc
+        try:
+            domain.decode('ascii')
+        except UnicodeDecodeError:  # domain is NOT ASCII string!!
+            return '' 
+        else:                       # domain is ASCII string
+            return domain
     else: return '' 
     
 def isRequestedSiteHttps(url): #returns 1 if https, 0 otherwise

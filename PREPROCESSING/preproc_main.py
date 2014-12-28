@@ -36,6 +36,8 @@ def get_input_files(runType):
         #Files = ['/home/michal/SALSA_files/testFiles/part-00000_150_12_03_10_first_100_lines'] #19 domains, no malwares
         #Files = ['/home/michal/SALSA_files/testFiles/part-00000_150_12_03_10_first_1000_lines'] #129 domains, no malweres, 329 edges
         #Files = ['/home/michal/SALSA_files/testFiles/part-00000_150_12_03_10_first_10000_lines']    #1020 domains, no malwares, 2724 edges
+        #Files = ['/home/michal/SALSA_files/testFiles/part-00001_2_12_03_10_first_200000_lines_last_100000']
+        #Files = ['/'.join([source_dir,'part-00001_2_12_03_10_first_200000_lines'])]
         
     else:   # runType == 'real_run'
         #main_dir = '/data'
@@ -83,7 +85,23 @@ def get_output_files(run_mode,fold=None):
     return processed_file, output_users_risk_dict_path, output_transitions_dict_path, output_domain_risk_dict_path
         
 
-def main(run_mode, evaluated_domain_list=None,wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.,fold=None):
+def main(run_mode, evaluated_domain_list=[],wo_users=False,link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.,fold=None):
+    '''
+    Performs the preprocessing flow  
+    Parameters:
+    -----------
+        run_mode - str (small_test/real_run)
+        evaluated_domain_list - list of strs [d1,d2](default-[])
+        wo_users - bool (default-False)
+        link_ref - bool (default-False)
+        link_weight - float (default-0.)
+        redirect_ref - bool (default-False)
+        redirect_weight - float (default-0.)
+        fold - str ('1'/'2'/...) (default-None)
+    Return:
+    -------
+        None
+    '''
     print 'PREPROC: run mode- ',run_mode,', STRAT -----> ',str(datetime.now()); sys.stdout.flush(); startTime = datetime.now()
     print 'wo_users - ',wo_users,'\nlink_ref - ',link_ref,', link_weight - ',link_weight,'\nredirect_ref - ',redirect_ref,', redirect_weight - ',redirect_weight,'\n\n'; sys.stdout.flush()
     # initialize file for the  process

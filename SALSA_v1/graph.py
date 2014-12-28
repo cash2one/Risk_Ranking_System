@@ -118,7 +118,7 @@ class buckets():
             '''
         
         return
-        
+             
 
 class domains_graph():
     G = nx.DiGraph              # directed graph: node = domain, edge(A,B) = user passed from domain A to B
@@ -485,27 +485,68 @@ class domains_graph():
  
         return #buckets '''
        
-    def evaluation(self,algs_list,eval_nodes_list=None,fn=None):
+    def evaluation(self,algs_list,test=[],fn=None):
         import stats
+        import numpy as np
+        
         eval_algs_list = []
         Lpct_dicts_list = []
-        if not eval_nodes_list:    # eval_nodes_list is None
-            risk = self.get_nodes_attr_val_dict(self.n_attr.risk)
-            eval_nodes_list = [ k for k,v in risk.items() if v == 1 ]
-
+        if not len(test):    # test_mal is empty
+            trh = gm.risk_threshold
+            '''risk = self.get_nodes_attr_val_dict(self.n_attr.risk)'''
+            risk = gm.get_labels_dict_from_dict(d=self.get_nodes_attr_val_dict(self.n_attr.risk), threshold=trh)
+            test_mal = [ k for k,v in risk.items() if v == 1 ]
+            test = zip(*risk.items())
+            '''tmp = np.asarray([0] * len(risk))
+            tmp[np.where(np.asarray(test[1])==1)] = 1
+            test[1] = tmp
+            #test[0] = np.asarray(test[0])'''
+             
+        else:
+            test_mal = test[0][np.where(test[1]==1)]
+        test_scores_list = []
         for alg in algs_list:
-            Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_auth_Lpct[alg]]) for k in eval_nodes_list))
+            Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_auth_Lpct[alg]]) for k in test_mal))
+            test_scores_list.append([ self.G.node[k][self.alg_auth_Lpct[alg]] for k in test[0] ])
             eval_algs_list.append('_'.join([alg,'auth']))
             if alg in self.alg_hub_Lpct:    #hits or salsa
-                Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_hub_Lpct[alg]]) for k in eval_nodes_list))
+                Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_hub_Lpct[alg]]) for k in test_mal))
+                test_scores_list.append([ self.G.node[k][self.alg_hub_Lpct[alg]] for k in test[0] ])
                 eval_algs_list.append('_'.join([alg,'hub']))
-        s = stats.stats(eval_algs_list,Lpct_dicts_list) # stats instantiation
+        s = stats.stats(eval_algs_list,Lpct_dicts_list,test[1],test_scores_list) # stats instantiation
         s.calc_stats()
         if fn: s.export_info(fn=fn,raw_flag=True)
+        
+        # Export to weka file:
+        #self.export_to_weka_file(algs_list,test)
+        
         return s
     
-    def export_domains_for_strat_Kfolds(self,dir):
-        #d = {k:0 for k in self.G.nodes()}
+    def export_to_weka_file(self,algs_list,test,fn_train,fn_test,fn_matrix=None):
+        import ml
+        
+        eval_algs_list = []
+        Lpct_dicts_list = []
+        for alg in algs_list:
+            Lpct_dicts_list.append(self.get_nodes_attr_val_dict(self.alg_auth_Lpct[alg]))
+            eval_algs_list.append('_'.join([alg,'auth']))
+            if alg in self.alg_hub_Lpct:    #hits or salsa
+                Lpct_dicts_list.append(self.get_nodes_attr_val_dict(self.alg_hub_Lpct[alg]))
+                eval_algs_list.append('_'.join([alg,'hub']))
+        trh = gm.risk_threshold
+        labels = gm.get_labels_dict_from_dict(d=self.get_nodes_attr_val_dict(self.n_attr.risk), threshold=trh)
+        #DEBUG: print self.get_nodes_attr_val_dict(self.n_attr.risk)
+        #DEBUG: print labels
+        '''for k,v in labels.items():
+            if v != 1:
+                labels[k] = 0'''
+        
+        obj = ml.LR(eval_algs_list,Lpct_dicts_list,labels,test)
+        obj.export_to_weka_file(fn_train, fn_test)
+        if fn_matrix: obj.export_matrix(fn_matrix)
+        return
+    
+    def export_domains_for_strat_Kfolds_forMalOnly(self,dir):
         d = dict(zip(self.G.nodes(),[0]*self.G.number_of_nodes()))
         for k,v in self.get_nodes_attr_val_dict(self.n_attr.risk).items():
             if v == 1: d[k] = 1
@@ -513,5 +554,26 @@ class domains_graph():
         
         mal_d = [k for k,v in d.items() if v]
         gm.write_list_to_file(mal_d,'/'.join([dir,'src_mal_domains.csv']))
+        
+        return
+    
+    def export_domains_for_strat_Kfolds(self,dir):
+        ''' writes 2 files: (1) dict of domain-binary_label in a pickle format, 
+                            (2) list of risky domains (the ones labeled as 1)
+        Parameters
+        ----------
+        dir - string, entire path of the output directory (tmp/runMode/mal_d) 
+        
+        Returns
+        -------
+        None
+        '''
+        trh = gm.risk_threshold
+        d = gm.get_labels_dict_from_dict(d=self.get_nodes_attr_val_dict(self.n_attr.risk), threshold=trh)
+        
+        gm.write_object_to_file(d,'/'.join([dir,'domains_risk.csv']))
+        
+        risky_d = [k for k,v in d.items() if v]
+        gm.write_list_to_file(risky_d,'/'.join([dir,'src_mal_domains.csv']))
         
         return

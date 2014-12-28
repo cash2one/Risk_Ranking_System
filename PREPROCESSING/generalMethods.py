@@ -7,7 +7,8 @@ Created on Jul 20, 2014
 import csv
 from operator import itemgetter
 
-
+def read_list_from_file(fn):
+    return [ line.strip() for line in open(fn,'r') ]    # does not recognize 'close', so probably close by the end of the func anywat...
  
 def write_list_to_file(l,fn):
     f=open(fn, "wb")
@@ -290,14 +291,27 @@ def write_dict_of_dicts_to_file(d,fn,first_col_name='domain'):
             w.writerow([k]+list(zip(*sorted(d[k].items()))[1]))
     return
 
-def get_general_file_path(run_mode,file_name,post_list=None,dir='tmp'):       
+def get_general_file_path(run_mode,file_name,post_list=None,dir='tmp',file_type='.csv'): 
+    ''' 
+    Parameters
+    -----------
+    run_mode - string, the directory name- 'small_test'/'real_run' 
+    file_name - string, the file (prefix) name
+    post_list - list of STRINGS (default None)
+    dir - string, directory name (default 'tmp')
+    file_type - string, file ending (default '.csv')
+    
+    Returns
+    -------
+    the joined full path (/home/michal/SALSA_files/ dir/ run_mode/ file_name_+post_list+file_type)
+    '''      
     postfix = ''
     if post_list:
         #post_list_str = '_'.join(post_list)
         postfix = ''.join(['_','_'.join(post_list)])#''.join(['_without_',evaluated_domains_str])
     
     main_dir = '/home/michal/SALSA_files'
-    return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,'.csv'])])
+    return '/'.join([main_dir,dir,run_mode,''.join([file_name,postfix,file_type])])
 
 def calc_elements_greater_than_threshold(l,threshold,pct_flag=False):
     ans = sum(i>=threshold for i in l)
@@ -305,5 +319,25 @@ def calc_elements_greater_than_threshold(l,threshold,pct_flag=False):
         return float(ans)/len(l)
     else:   # the returned val is the actual number of elements
         return ans
+    
+def get_labels_dict_from_dict(d,threshold=1):
+    ''' convert a dict of keys-vals to keys-labels (0,1)
+    Parameters
+    -----------
+    d - dict with float/int values
+    threshold - float/int, when the dict val >= threshold --> label=1, else lavel=0
+    Returns
+    -------
+    labeled dict keys-labels
+    '''
+    #[keys,values] = zip(*d.items())
+    D = d.copy()
+    for k,v in D.items():
+        if v >= threshold:
+            D[k] = 1
+        else:
+            D[k] = 0
+    return D
 
 epsilon = 1e-4 #0.0001
+risk_threshold = 0.1 #when a node (domain) initial risk rank is greater or equal to this value- it is labeled as risky node 
