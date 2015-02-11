@@ -43,6 +43,8 @@ class stats():
     def calc_stats(self):
         import generalMethods as gm
         from sklearn.metrics import roc_auc_score
+        #from sklearn.metrics import classification_report
+        
         for k,v in self.stats.items():
             Lpct_val_list = np.array(v['Lpct_val_list'])
             self.stats[k][self.atr.num_of_mal] = len(Lpct_val_list)
@@ -61,6 +63,10 @@ class stats():
             self.stats[k][self.atr.pct_g95] =  gm.calc_elements_greater_than_threshold(Lpct_val_list,95,pct_flag=True)
             self.stats[k][self.atr.auc] = roc_auc_score(self.test_labels, v['test_scores_list'])
             self.stats[k][self.atr.num_of_test_domains] = len(v['test_scores_list'])
+            
+            # for the following you shall choose a threshold!!:
+            #print classification_report(self.test_labels, v['test_scores_list'], target_names=['class 0', 'class 1']) # precision, recall, f1-score, support
+
         return
     
     '''def auc_evaluation(self,algs_list,test=[]):#,fn=None):

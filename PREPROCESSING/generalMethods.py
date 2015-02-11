@@ -6,6 +6,7 @@ Created on Jul 20, 2014
 '''
 import csv
 from operator import itemgetter
+import numpy as np
 
 def read_list_from_file(fn):
     return [ line.strip() for line in open(fn,'r') ]    # does not recognize 'close', so probably close by the end of the func anywat...
@@ -181,12 +182,15 @@ def read_graph_from_file(fn):
 
 def write_object_to_file(obj,fn):
     import pickle
-    pickle.dump(obj, open(fn, 'w'))
+    with open(fn, 'wb') as f:
+        pickle.dump(obj, f)
     return
 
 def read_object_from_file(fn):
     import pickle
-    return pickle.load(open(fn))
+    with open(fn, 'rb') as f:
+        obj = pickle.load(f)
+    return obj
 
 
 def get_percentiles(src_dict):
@@ -260,7 +264,6 @@ def create_avg_dict_from_dicts(dicts_list,n=None,fn=None):
     # dicts_list = list of dictionaries WHICH HAVE THE SAME KEIS!!!!!
     # n = the average is made from the top n values
     # fn = output file path
-    import numpy as np
     
     d = {}
     if not n:
@@ -325,10 +328,10 @@ def get_labels_dict_from_dict(d,threshold=1):
     Parameters
     -----------
     d - dict with float/int values
-    threshold - float/int, when the dict val >= threshold --> label=1, else lavel=0
-    Returns
+    threshold - float/int, when the dict val >= threshold --> label=1, else b=0
+    Returns 
     -------
-    labeled dict keys-labels
+    D - labeled dict keys-labels
     '''
     #[keys,values] = zip(*d.items())
     D = d.copy()
@@ -339,5 +342,25 @@ def get_labels_dict_from_dict(d,threshold=1):
             D[k] = 0
     return D
 
+def get_labels_list_from_list(l,threshold=1):
+    ''' convert a dict of keys-vals to keys-labels (0,1)
+    Parameters
+    -----------
+    l - list of float/int values
+    threshold - float/int, when the list val >= threshold --> label=1, else label=0
+    Returns
+    -------
+    L - numpy array labels
+    '''
+    L = np.asarray([0]*len(l))
+    idx_1 = np.where(np.asarray(l[:])>=threshold)
+    L[idx_1] = 1
+    return L
+
 epsilon = 1e-4 #0.0001
-risk_threshold = 0.1 #when a node (domain) initial risk rank is greater or equal to this value- it is labeled as risky node 
+risk_threshold = 0.4 #when a node (domain) initial risk rank is greater or equal to this value- it is labeled as risky node
+
+
+'''# test get_labels_list_from_list:
+print get_labels_list_from_list([50,75,26,58.5,44.3,59.8,77.1,100],50) 
+'''

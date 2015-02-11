@@ -80,7 +80,55 @@ class LR():
         return
 
 
+def logTranformating(X, indices,alpha):
+    '''
+    performs the unique (Nancys) log transform on each of the matrix scores columns
+    Parameters
+    ----------
+    X - numpy record array, LR.m
+    
+    Returns
+    -------
+    X
+    '''
+    import math
+    beta = 1-alpha
+    C = (-math.log(1-beta))/alpha # Natural basis
+    for idx in indices:
+        X[idx] = 1-np.exp(-C*X[idx])
+    
+    return X
 
+
+def matrix_log_transform(m):
+    '''
+    performs the unique (Nancys) log transform on each of the matrix scores columns
+    Parameters
+    ----------
+    m - numpy record array, LR.m
+    
+    Returns
+    -------
+    m
+    '''
+    import pandas as pd
+    
+    
+    col_names = list(m.dtype.names)
+    col_scores = col_names[1:-1]
+    print pd.DataFrame(m[col_scores]).describe(percentiles=np.asarray(range(0,100,5),dtype=float)/100)
+    '''logScaling = col_scores
+    logTranformating(m, logScaling, 0.89)
+    print pd.DataFrame(m[col_scores]).describe(percentiles=np.asarray(range(0,100,5),dtype=float)/100)
+    '''
+    
+    return m
+
+'''import generalMethods as gm
+fn = '/home/michal/SALSA_files/outputs/real_run/matrix_fold_1.arff'
+matrix_log_transform(gm.read_object_from_file(fn))
+'''
+    
 '''#test:
 algs_list = ['alg1','alg2']
 d1 = {'abcdef':1.3,'b':2,'c':89.8,'d':97}

@@ -227,7 +227,7 @@ class Functions(object):
     
     def exportMyUserRiskLabelDictToFile(self,fn):
         global l
-        mal_weight = 1
+        mal_weight = trxFunctionsClass.w['mal'] #1
         userRiskDict = {}
         
         for line in l.lines:

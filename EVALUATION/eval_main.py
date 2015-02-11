@@ -11,13 +11,26 @@ import sys
 from multiprocessing import Pool
 import numpy as np
 
-global num_of_proc; num_of_proc = 3
-global run_mode; run_mode = 'real_run'  #     'small_test' #   
-global multiproc_flag; multiproc_flag = True 
-global nstart_flag; nstart_flag = False
-global k_folds; k_folds = 6
-#global algorithms_list; algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
-global algorithms_list; algorithms_list = ['hits', 'pagerank', 'inverse_pagerank']
+'''################## config parameters ##################'''
+
+global run_mode;            run_mode = 'real_run'  # 'small_test' #   
+global multiproc_flag;      multiproc_flag = True
+global num_of_proc;         num_of_proc = 3   
+global k_folds;             k_folds = 6
+global algorithms_list;     algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
+#global algorithms_list;     algorithms_list = ['hits', 'pagerank', 'inverse_pagerank']
+
+global redirect_ref;        redirect_ref=True
+global redirect_weight;     redirect_weight=0.5
+
+global link_ref;            link_ref=True
+global link_weight;         link_weight=0.2
+
+global wo_users;            wo_users=True
+global nstart_flag;         nstart_flag = False
+
+'''######################################################'''
+
 
 def run_entire_flow(run_mode,algorithms_list=[],tests_list=[],wo_users=False,\
                     link_ref=False,link_weight=0.,redirect_ref=False,redirect_weight=0.,\
@@ -137,7 +150,9 @@ def main():
     if not os.path.exists(domains_risk_dict_f):
         # run entire flow with empty evaluated domains list- will create the file of labeled domains risk dict (1=mal,0=else)
         run_entire_flow(run_mode,algorithms_list,[],\
-                        redirect_ref=True,redirect_weight=0.5,link_ref=True,link_weight=0.2,nstart_flag=nstart_flag)#,wo_users=True)
+                        redirect_ref=redirect_ref,redirect_weight=redirect_weight,\
+                        link_ref=link_ref,link_weight=link_weight,\
+                        nstart_flag=nstart_flag,wo_users=wo_users)
         #folds_stats_list =  run_entire_flow(run_mode,algorithms_list,[],wo_users=True)
     src_mal_domains = gm.get_general_file_path(run_mode, 'mal_d/src_mal_domains', dir='tmp') 
     mal_list = np.array(gm.read_list_from_file(src_mal_domains))#[line.strip() for line in open(src_mal_domains,'r')])
@@ -156,8 +171,10 @@ def main():
             #mal_domains_list.append(list(mal_list[test_index]))
        
     folds_stats_list =  run_entire_flow(run_mode,algorithms_list,tests_list,\
-                                        redirect_ref=True,redirect_weight=0.5,link_ref=True,link_weight=0.2,\
-                                        nstart_flag=nstart_flag,multiproc_flag=multiproc_flag)#,wo_users=True)
+                                        redirect_ref=redirect_ref,redirect_weight=redirect_weight,\
+                                        link_ref=link_ref,link_weight=link_weight,\
+                                        nstart_flag=nstart_flag,wo_users=wo_users,\
+                                        multiproc_flag=multiproc_flag)#,)
     #folds_stats_list =  run_entire_flow(run_mode,algorithms_list,mal_domains_list,redirect_ref=False)#,link_weight=1,wo_users=False)
     #folds_stats_list =  run_entire_flow(run_mode,algorithms_list,tests_list,wo_users=True)
     '''else:
