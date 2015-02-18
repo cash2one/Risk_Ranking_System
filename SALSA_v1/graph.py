@@ -16,7 +16,7 @@ class edge_attributes():
     weight = 'weight'
     
 class node_attributes():
-    risk = 'risk'
+    risk = 'risk'                           # the initial risk score of the domain (blackLists)
     
     salsa_hub_score = 'salsa_hub'
     salsa_auth_score = 'salsa_authority'
@@ -133,10 +133,18 @@ class domains_graph():
                      'inverse_pagerank':n_attr.inverse_pagerank_l_pct}            
     alg_hub_Lpct = {'salsa':n_attr.salsa_hub_l_pct, \
                     'hits':n_attr.hits_hub_l_pct}
+    alg_auth_score = {'salsa':n_attr.salsa_auth_score, \
+                     'hits':n_attr.hits_auth_score, \
+                     'pagerank':n_attr.pagerank_score,\
+                     'inverse_pagerank':n_attr.inverse_pagerank_score}            
+    alg_hub_score = {'salsa':n_attr.salsa_hub_score, \
+                    'hits':n_attr.hits_hub_score}
     
-    def __init__(self, transitions_dict_file):
+    def __init__(self, transitions_dict_file,domain_risk_dict_path,whiteList_file):
         #G = nx.from_dict_of_dicts(Transitions_Dict, create_using, multigraph_input)
         self.G = nx.DiGraph(gm.readDict(transitions_dict_file)) # graph instantiation
+        self.add_nodes_attr(self.n_attr.risk, gm.readDict(domain_risk_dict_path))
+        self.whiteList_set = self.create_white_list_for_post_filtering(whiteList_file)  # create/load the whiteList domains (set)
         return
     
     def clear(self):
@@ -169,12 +177,12 @@ class domains_graph():
     def add_CN_full_conections(self, eps):
         added_edges_list = []
         # link all nodes to CN
-        no_CN_incoming_links_nodes = {n for n in self.G.nodes() if not self.G.has_edge(n, self.CN)}
+        no_CN_incoming_links_nodes = {n for n in self.G.nodes_iter() if not self.G.has_edge(n, self.CN)}
         for n in no_CN_incoming_links_nodes:
             added_edges_list.append((n,self.CN,eps))
 
         # link CN to all nodes   
-        no_CN_outgoing_links_nodes = {n for n in self.G.nodes() if not self.G.has_edge(self.CN, n)}
+        no_CN_outgoing_links_nodes = {n for n in self.G.nodes_iter() if not self.G.has_edge(self.CN, n)}
         for n in no_CN_outgoing_links_nodes:
             added_edges_list.append((self.CN,n,eps))
             
@@ -187,7 +195,7 @@ class domains_graph():
         return
     
     def add_nodes_attr(self,attr_name,attr_val_dict):
-        for n in self.G.nodes():
+        for n in self.G.nodes_iter():
             if n in attr_val_dict:
                 self.G.node[n][attr_name] = attr_val_dict[n]
             else:
@@ -196,10 +204,64 @@ class domains_graph():
     
     def get_nodes_attr_val_dict(self,attr_name):
         nodes_attr_dict = dict()
-        for n in self.G.nodes():
+        for n in self.G.nodes_iter():
             nodes_attr_dict[n] = self.G.node[n][attr_name]
         return nodes_attr_dict
 
+    def create_white_list_for_post_filtering(self,fn):
+        ''' Creates a file of white list domains (if not already exits) where there was high incoming traffic,
+        high means more than the averaged of the number of users entered to domain by all its incoming edges. '''
+        import os, math, tldextract
+        if not os.path.exists(fn):
+            b_domains_set = {'xhamster.com','adultism.com','dojki.com','mygames.com.ua','bigpoint.com','flashgames.ru',\
+                             'a10.com','xnxx.com','nick.de','porngaytube.net','amazingwildtube.com','youporn.com',\
+                             'redtube.com','besttubeclips.net','youjizz.com','jacquieetmichel.net','dudesnude.com',\
+                             'sourceforge.net','kinox.to','hentai.ms','imagefap.com','movie2k.to','sexuria.com',\
+                             'gallerysex.net','ashemaletube.com','xvideos.com','escort-ireland.com','tube8.com',\
+                             'perveden.com','gidonline.ru','met-art.com','oddassy.com','cam4.com'}
+            g_domains_set = {'google','facebook','ebay','twitter','yandex','paypal','citibank','bing','yahoo','youtube',\
+                             'apple','tripadvisor'} 
+            whiteList_set = {'babylon.com','walla.co.il','flickr.com','netflix.com','firefox.com','conduit.com',\
+                             'washingtonpost.com','endomondo.com','linkedin.com','avg.com','ask.com','reddit.com'}  # set var not dict.
+            
+            added_whiteList = [d for d in self.G.nodes_iter() if tldextract.extract(d).domain in g_domains_set]
+            whiteList_set.update(added_whiteList)   # insert the new domains from added_whiteList (list) to the whiteList_set (set)
+            del added_whiteList[:]  # clear added_whiteList
+            
+            
+            g_traffic_dict = self.G.in_degree(weight=self.e_attr.good)
+            gm.write_dict_ordered_by_value_to_file(g_traffic_dict, '_'.join([fn,'DEBUG_goodTraffic']))
+            avg = math.ceil(float(sum(g_traffic_dict.values()))/len(g_traffic_dict))
+            trh = 10 * avg
+            added_whiteList = [k for k,v in g_traffic_dict.items() if v>=trh]
+            print 'create_white_list_for_post_filtering: avg=',avg,' , trh=',trh,' , added_whiteList before cleaning: len=',len(added_whiteList)#,' , added_whiteList=',added_whiteList
+            # Delete known risky domains from the whiteList:
+            added_whiteList[:] = [d for d in added_whiteList if self.G.node[d][self.n_attr.risk] < gm.risk_threshold and d not in b_domains_set] # remove from the good users popular domains the ones which known as risky (from blacklists) or known as porn/problematic domains (b_domains_set)
+            print 'create_white_list_for_post_filtering: added_whiteList AFTER cleaning: len=',len(added_whiteList)#,' , added_whiteList=',added_whiteList
+            whiteList_set.update(added_whiteList)   # insert the new domains from added_whiteList (list) to the whiteList_set (set)                   
+            
+            # for DEBUG:
+            WL_dict = dict((k,v) for k,v in g_traffic_dict.items() if k in added_whiteList)
+            gm.write_dict_ordered_by_value_to_file(WL_dict, '_'.join([fn,'DEBUG'])) # mainly for debug!! 
+            # end DEBUG
+            
+            '''white_flag_dict = {d:0 for d in self.G.nodes_iter()}    # init dict of all nodes with value zero     
+            for d in whiteList_set: white_flag_dict[d] = 1          # changes the domains exist in whiteList_set to 1 in the white_flag_dict 
+            gm.write_object_to_file(white_flag_dict, fn)  # write the whiteList to using pickle for later loading
+            '''
+        else: 
+            whiteList_set = gm.read_object_from_file(fn)
+            
+        #self.add_nodes_attr(self.n_attr.is_white, white_flag_dict)
+        return whiteList_set
+    
+    def post_filtering_results(self,alg):
+        for d in self.whiteList_set:
+            self.G.node[d][self.alg_auth_score[alg]] = 0.0
+        if alg in self.alg_hub_score:
+            for d in self.whiteList_set:
+                self.G.node[d][self.alg_hub_score[alg]] = 0.0
+        return
     
     
     def run_hits(self,hits_type='hits_scipy', max_iter=100, tol=1e-08, nstart=None, normalized=True):
@@ -364,7 +426,8 @@ class domains_graph():
     def score_histogram(self,score_attr):
         gm.histogram_of_dict(self.get_nodes_attr_val_dict(score_attr), bins=self.G.number_of_nodes()/100)
         return
-        
+    
+
     def create_combined_scores(self,run_mode,alg_list=[],evaluated_domain_list=None,attr='Lpct'):
         # alg_list = list of algorithms to combine its scores
         # attr = (string) the node attribute which the combined score is based on
@@ -488,6 +551,7 @@ class domains_graph():
     def evaluation(self,algs_list,test=[],fn=None):
         import stats
         import numpy as np
+        from datetime import datetime
         
         eval_algs_list = []
         Lpct_dicts_list = []
@@ -515,7 +579,13 @@ class domains_graph():
                 eval_algs_list.append('_'.join([alg,'hub']))
         s = stats.stats(eval_algs_list,Lpct_dicts_list,test[1],test_scores_list) # stats instantiation
         s.calc_stats()
-        if fn: s.export_info(fn=fn,raw_flag=True)
+        if fn: # "full run" 
+            s.export_info(fn=fn,raw_flag=True)
+            s.export_seed_histogram(fn=fn[:-4])
+        else: # a fold run- we still want to export the histogram of the known bad domains:
+            s.export_seed_histogram(fn='/home/michal/SALSA_files/outputs/real_run/hist_'+datetime.now().strftime("%H:%M:%S"))
+
+            
         
         # Export to weka file:
         #self.export_to_weka_file(algs_list,test)
@@ -547,7 +617,7 @@ class domains_graph():
         return
     
     def export_domains_for_strat_Kfolds_forMalOnly(self,dir):
-        d = dict(zip(self.G.nodes(),[0]*self.G.number_of_nodes()))
+        d = {d:0 for d in self.G.nodes_iter()}#dict(zip(self.G.nodes(),[0]*self.G.number_of_nodes()))
         for k,v in self.get_nodes_attr_val_dict(self.n_attr.risk).items():
             if v == 1: d[k] = 1
         gm.write_object_to_file(d,'/'.join([dir,'domains_risk.csv']))
@@ -577,3 +647,5 @@ class domains_graph():
         gm.write_list_to_file(risky_d,'/'.join([dir,'src_mal_domains.csv']))
         
         return
+    
+    

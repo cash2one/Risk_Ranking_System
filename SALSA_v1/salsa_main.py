@@ -65,10 +65,11 @@ def main(run_mode='real_run',algorithms_list=[],test=[],fold=None,nstart_flag=Fa
     else:       f_postfix = None
 
     transitions_dict_path, domain_risk_dict_path = get_input_files(run_mode,fold)#evaluated_domain_list)
+    whiteList_path = gm.get_general_file_path(run_mode, 'whiteList')
 
-    G = graph.domains_graph(transitions_dict_path)
+    G = graph.domains_graph(transitions_dict_path,domain_risk_dict_path,whiteList_path)
     
-    G.add_nodes_attr(G.n_attr.risk, gm.readDict(domain_risk_dict_path))
+    #G.add_nodes_attr(G.n_attr.risk, gm.readDict(domain_risk_dict_path))
     #print '\nbefore preprocessing:'
     print '--- main: num of nodes: ' + str(G.G.number_of_nodes()) + ', num of edges: ' + str(G.G.number_of_edges()); sys.stdout.flush(); tmpTime=datetime.now()
     
@@ -88,14 +89,15 @@ def main(run_mode='real_run',algorithms_list=[],test=[],fold=None,nstart_flag=Fa
     
     for alg in algorithms_list:
         h,a = eval(run[alg])
+        G.post_filtering_results(alg)
         hubs_file, authorities_file = get_output_files(run_mode,alg,f_postfix)#evaluated_domain_list)
         G.evaluate_algorithem(auth_fn=authorities_file, hub_fn=hubs_file, alg_type=alg)
         
-        # write a and h dicts to files using pickle:
+        '''# write a and h dicts to files using pickle:
         a_fn = gm.get_general_file_path(run_mode,'_'.join([alg,'a_dict_pickle']),f_postfix)#evaluated_domain_list)
-        gm.write_object_to_file(a, a_fn)
+        gm.write_object_to_file(a, a_fn)'''
         #G.alg_histogram(alg)
-        print '\n--- main: '+alg+' run + evaluation took: ' + str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
+        print '\n--- main: ',alg,' run + evaluation took: ',str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
     '''for n in evaluated_domain_list:
         #out_fn = get_general_file_path(run_mode,file_name='eval_out',evaluated_domain_list=[n],dir='outputs')
         out_fn = gm.get_general_file_path(run_mode,file_name='eval_out_sum',dir='outputs')
@@ -112,6 +114,7 @@ def main(run_mode='real_run',algorithms_list=[],test=[],fold=None,nstart_flag=Fa
         print '\n--- main: this is a FULL run!'
         out_fn = gm.get_general_file_path(run_mode,file_name='eval_BL_out',dir='outputs')
         eval_obj = G.evaluation(algorithms_list, test, out_fn) 
+        # FOR DEBUG: gm.write_object_to_file(eval_obj, fn='/home/michal/SALSA_files/tmp/s_obj')
         G.export_domains_for_strat_Kfolds('/'.join(['/home/michal/SALSA_files/tmp',run_mode,'mal_d']))
     else:   # 'fold' run
         print '\n--- main: this is a FOLD run!'

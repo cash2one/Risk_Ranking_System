@@ -150,7 +150,9 @@ class TrxFunctions(object):
         else: return 'Night'
         
     def containKeyword(self, url):
-        risky = re.compile('Torrent|Crack|[^s]Hack|Keygen|1337x|Bitsnoop|Ailbreak|Spyware|Pirate|Astalavista|Demonoid|Phrozencrew|Underground|Warez|Btjunkie|H33t', re.IGNORECASE).search(url)
+        risky = re.compile('Torrent|Crack|[^s]Hack|Keygen|1337x|Bitsnoop|Ailbreak|Spyware|Pirate|Astalavista|Demonoid|\
+        Phrozencrew|Underground|Warez|Btjunkie|H33t|\
+        Sex|[^you]Tube|^Tube|Porn|xxx|Adult|Mature|Pussy|Fuck|Tits|Teen', re.IGNORECASE).search(url)
         if (risky is not None): 
             return 1    # True: if the URL contains at least one of the risky keywords return isRisky = 1 , riskLevel = 1
         else: return 0
@@ -352,7 +354,9 @@ def searchKeyInHash(type, key):
         else: return 0
 
 def containKeyword(str):
-    risky = re.compile('Torrent|Crack|[^s]Hack|Keygen|1337x|Bitsnoop|Ailbreak|Spyware|Pirate|Astalavista|Demonoid|Phrozencrew|Underground|Warez|Btjunkie|H33t', re.IGNORECASE).search(str)
+    risky = re.compile('Torrent|Crack|[^s]Hack|Keygen|1337x|Bitsnoop|Ailbreak|Spyware|Pirate|Astalavista|Demonoid|\
+        Phrozencrew|Underground|Warez|Btjunkie|H33t|\
+        Sex|[^you]Tube|^Tube|Porn|xxx|Adult|Mature|Pussy|Fuck|Tits|Teen', re.IGNORECASE).search(str)
     if (risky is not None): return 1    # True: if the URL contains at least one of the risky keywords return isRisky = 1 , riskLevel = 1
     else: return 0
 

@@ -227,45 +227,39 @@ class Functions(object):
     
     def exportMyUserRiskLabelDictToFile(self,fn):
         global l
-        mal_weight = trxFunctionsClass.w['mal'] #1
-        userRiskDict = {}
-        
-        for line in l.lines:
-            uId = line[Label.uId]
-            pRisk = line[Label.prevDomainRiskRank]  # previous URL domain risk rank
-            cRisk = line[Label.riskRank]            # current (requested) URL domain risk rank
-            rRisk = line[Label.RedirDomainRiskRank] # redirect to URL domain risk rank
+        if not os.path.exists(fn):  # the file of users risk dict does'nt exist- creating it now:
+            mal_weight = trxFunctionsClass.w['mal'] #1
+            userRiskDict = {}
             
-            if uId in userRiskDict:
-                userRiskDict[uId]['risk sum'] += max(pRisk, cRisk, rRisk)
-            else:   #new user
-                userRiskDict.setdefault(uId,{'risk sum':max(pRisk, cRisk, rRisk), 'visited malware':0})
-                #userRiskDict[uId]['risk sum'] = max(line[Label.prevDomainRiskRank] ,line[Label.riskRank])
-                #userRiskDict[uId]['visited malware'] = 0
+            for line in l.lines:
+                uId = line[Label.uId]
+                pRisk = line[Label.prevDomainRiskRank]  # previous URL domain risk rank
+                cRisk = line[Label.riskRank]            # current (requested) URL domain risk rank
+                rRisk = line[Label.RedirDomainRiskRank] # redirect to URL domain risk rank
                 
-            if max(pRisk, cRisk, rRisk) == mal_weight:
-                    userRiskDict[uId]['visited malware'] = 1
-            
-        # if the sum of the risk rank of the domains the user visited is greater than 3
-        # or if he visited a known malicious site he'll be defined as a bad user:
-        for u in userRiskDict:
-            if userRiskDict[u]['visited malware'] or userRiskDict[u]['risk sum'] >= 3:
-                userRiskDict[u] = 1
-            else:
-                userRiskDict[u] = 0
-            '''if uId in userRiskDict:
-                userRiskDict[uId] += max(line[Label.prevDomainRiskRank] ,line[Label.riskRank])
-            else:
-                userRiskDict[uId] = max(line[Label.prevDomainRiskRank] ,line[Label.riskRank])
+                if uId in userRiskDict:
+                    userRiskDict[uId]['risk sum'] += max(pRisk, cRisk, rRisk)
+                else:   #new user
+                    userRiskDict.setdefault(uId,{'risk sum':max(pRisk, cRisk, rRisk), 'num of trx':0, 'visited malware':0})       
+                if max(pRisk, cRisk, rRisk) == mal_weight:
+                        userRiskDict[uId]['visited malware'] = 1
+                userRiskDict[uId]['num of trx'] += 1
+            # if the sum of the risk rank of the domains the user visited / the num of his transactions 
+            # (for normalizing long sessions) is greater than 0.2 or if he visited a known malicious site 
+            # he'll be defined as a bad user:
+            for u in userRiskDict:
+                #if userRiskDict[u]['visited malware'] or userRiskDict[u]['risk sum'] >= 3:
+                if userRiskDict[u]['visited malware'] or userRiskDict[u]['risk sum']/userRiskDict[u]['num of trx'] >= 0.2:
+                    userRiskDict[u] = 1
+                else:
+                    userRiskDict[u] = 0
         
-        # if the sum of the risk rank of the domains the user visited is greater than 1 it is a bad user:
-        for u in userRiskDict:
-            if userRiskDict[u] >= 1:
-                userRiskDict[u] = 1
-            else:
-                userRiskDict[u] = 0'''
-                
-        gm.saveDict(fn, userRiskDict)
+        else:   # The users risk rank dict file already exists (can be a file from Nancy)
+            userRiskDict = gm.readDict(fn)  # load the users risk dict
+            for line in l.lines:            # check that all users (from lines) appear in the dict- if not add them with a value of zero:
+                userRiskDict.setdefault(line[Label.uId],0)
+        
+        gm.saveDict(fn, userRiskDict)       # save the users risk dict to file
         return         
         
     def generateAggregativeDataUponSessionSegmentaion(self):   

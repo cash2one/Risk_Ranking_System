@@ -557,6 +557,38 @@ def test_stats():
     st.stats_union([s,s2], fn='/home/michal/SALSA_files/tmp/small_test/test', raw_flag=True)
     return
 
+
+def create_digraph():
+    dod= {0: {1:{'weight':1,'g':2,'b':2}, 2:{'weight':1,'g':3,'b':3}},\
+          1: {2:{'weight':1,'g':1,'b':1}}} # single edge (0,1)
+    G=nx.DiGraph(dod)
+    return  G
+
+def test_agg_in_deg_attrs():
+    import math
+    dod= {0: {1:{'weight':1,'g':3,'b':2}, 2:{'weight':1,'g':4,'b':3}},\
+          1: {2:{'weight':2,'g':1,'b':1}}} # single edge (0,1)
+    G=nx.DiGraph(dod)
+    g_traffic_dict = G.in_degree(weight='g')
+    print g_traffic_dict
+    avg = math.ceil(float(sum(g_traffic_dict.values()))/len(g_traffic_dict))
+    print [k for k,v in g_traffic_dict.items() if v>=avg]
+    
+    #nodes = [d for d in G.nodes_iter()]
+    #print 'nodes-',nodes
+    g_domain_set = {1,3,5}
+    for k,v in G.nodes_iter(data=True):
+        v['weight'] = 0
+    print G.nodes(data=True)
+
+    zero_dict = {d:0 for d in G.nodes_iter()} 
+    print 'zero_dict: ',zero_dict
+    
+    for k,v in G.nodes_iter(data=True):
+        if k in g_domain_set: v['weight'] = 100
+    print G.nodes(data=True)
+    
+
 def main():
     #fn = '/home/michal/SALSA_files/test_matrix'
     #gm.writeMatrixToFile(fn, Lden)
@@ -569,7 +601,8 @@ def main():
     #test_eig_methods()
     #test_networkx_methods()
     #plotting_fine_tuning()
-    test_stats()
+    #test_stats()
+    test_agg_in_deg_attrs()
     return
 
 main()

@@ -45,7 +45,7 @@ class stats():
         from sklearn.metrics import roc_auc_score
         #from sklearn.metrics import classification_report
         
-        for k,v in self.stats.items():
+        for k,v in self.stats.items():  # for each alg:
             Lpct_val_list = np.array(v['Lpct_val_list'])
             self.stats[k][self.atr.num_of_mal] = len(Lpct_val_list)
             self.stats[k][self.atr.min] = min(Lpct_val_list)
@@ -69,30 +69,67 @@ class stats():
 
         return
     
-    '''def auc_evaluation(self,algs_list,test=[]):#,fn=None):
-        '''''' calculates the AUC measure for each algorithm
-        Parameters
-        ----------
-        algs_list = list of algorithms , ['salsa','hits',...]
-        test = 
-        #fn = (string) full path name of output file
+    def export_seed_histogram(self,fn):
+        '''export the histogram of seed (label 1 domains) of all algs to file)'''
+        import matplotlib.pyplot as plt
+        ranks = []  # list of the algs seed ranks lists, [ [3,55,46] , [35,88,67] , ... ]
+        algs = []
+        seed_idxs = np.where(self.test_labels == 1)[0]
+        for k,v in self.stats.items():  # for each alg:
+            algs.append(k)
+            ranks.append(v['test_scores_list'][seed_idxs])
         
         
-        Returns
-        -------
-        algs_auc = dict of algoritm-AUC , {'hits_auth':0.87,'pagerank_auth':0.59,...}''''''
-        from sklearn.metrics import roc_auc_score
-        algs_auc = {}
-        if len(test):
-            for alg in algs_list:
-                alg_scores = [ self.G.node[k][self.alg_auth_Lpct[alg]] for k in test[0] ]
-                algs_auc['_'.join([alg,'auth'])] = roc_auc_score(test[1], alg_scores)
-                if alg in self.alg_hub_Lpct:    #hits or salsa
-                    alg_scores = [ self.G.node[k][self.alg_hub_Lpct[alg]] for k in test[0] ]
-                    algs_auc['_'.join([alg,'hub'])] = roc_auc_score(test[1], alg_scores)
-            algs_auc['num_of_mal'] = sum(test[1])
-            algs_auc['num_of_domains'] = len(test[1])
-        return algs_auc'''
+        '''y0,binEdges=np.histogram(ranks[0],bins=10)
+        y1,binEdges=np.histogram(ranks[1],bins=10)
+        y2,binEdges=np.histogram(ranks[2],bins=10)
+        y3,binEdges=np.histogram(ranks[3],bins=10)
+        y4,binEdges=np.histogram(ranks[4],bins=10)
+        y5,binEdges=np.histogram(ranks[5],bins=10)
+        binEdges=np.histogram(ranks[0],bins=10)[1]'''
+        # I did it ugly and manually cause there were problems with the for implementation (np.histogram)!
+        # NOTE: if number of algs ranks is changing you need to update this code accordingly!
+        y0,binEdges = np.histogram(ranks[0],bins=10, normed=True)
+        y1 = np.histogram(ranks[1],bins=10, normed=True)[0]
+        y2 = np.histogram(ranks[2],bins=10, normed=True)[0]
+        y3 = np.histogram(ranks[3],bins=10, normed=True)[0]
+        y4 = np.histogram(ranks[4],bins=10, normed=True)[0]
+        y5 = np.histogram(ranks[5],bins=10, normed=True)[0]
+
+        #bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
+        for idx,alg in enumerate(algs):
+            if alg.startswith('inv'): algs[idx]='inv_pagerank'
+            if alg.startswith('page'): algs[idx]='pagerank'
+            
+        
+        alg0 = algs[0]
+        alg1 = algs[1]
+        alg2 = algs[2]
+        alg3 = algs[3]
+        alg4 = algs[4]
+        alg5 = algs[5]
+        
+        plt.plot(y0,'-', label=alg0)
+        plt.plot(y1,'-', label=alg1)
+        plt.plot(y2,'-', label=alg2)
+        plt.plot(y3,'-', label=alg3)
+        plt.plot(y4,'-', label=alg4)
+        plt.plot(y5,'-', label=alg5)
+        '''for i in ranks:
+            plt.plot(bincenters,np.histogram(ranks[i],bins=10)[0],'-', label=algs[i])'''
+        
+        '''plt.plot(bincenters,y0,'-', bincenters,y1,'r-', bincenters,y2,'g-',\
+                 bincenters,y3,'y-', bincenters,y4,'o-', bincenters,y5,'p-')'''
+        
+        
+        plt.xlabel('Percentile bucket')
+        plt.ylabel('Number of known risky domains')
+        plt.title('Histogram of the known risky domains risk ranks per algorithm')
+        plt.legend(bbox_to_anchor=(0.75, 1.), loc=2, borderaxespad=0.,prop={'size':11})
+        #plt.show()
+        plt.savefig(''.join([fn,'.png']))
+        return
+
     
     def export_info(self,fn,raw_flag=False):
         ''' writes the stats object info to file
@@ -162,5 +199,13 @@ def stats_union(stats_list,fn,raw_flag=False):
             u_s.stats[alg][u_s.atr.auc] = accum_aucs_list[idx]/num_of_domains
     u_s.export_info(fn,raw_flag)
     return
-    
+
+'''#FOR DEBUG:
+def main():
+    import generalMethods as gm
+    from datetime import datetime
+    s_obj = gm.read_object_from_file(fn='/home/michal/SALSA_files/tmp/s_obj')
+    s_obj.export_seed_histogram(fn='/home/michal/SALSA_files/tmp/s_obj_'+datetime.now().strftime("%H:%M:%S"))
+    return
+main()'''
             

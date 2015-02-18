@@ -13,8 +13,8 @@ import numpy as np
 
 '''################## config parameters ##################'''
 
-global run_mode;            run_mode = 'real_run'  # 'small_test' #   
-global multiproc_flag;      multiproc_flag = True
+global run_mode;            run_mode = 'real_run'  #'small_test' #    
+global multiproc_flag;      multiproc_flag = False
 global num_of_proc;         num_of_proc = 3   
 global k_folds;             k_folds = 6
 global algorithms_list;     algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
@@ -68,10 +68,11 @@ def run_entire_flow(run_mode,algorithms_list=[],tests_list=[],wo_users=False,\
         else:   # tests_list is empty
             folds_stats_list = [ run_entire_flow_iteration(run_mode,algorithms_list,tests_list,wo_users,link_ref,link_weight,redirect_ref,redirect_weight,nstart_flag) ]
     
-    else:   # NOT multiprocessing mode (for debugging)
+    else:   # NOT multiprocessing mode (for debugging or "BL run"- e.g. got users risk scores from Nancy)
         folds_stats_list = []
-        for idx,test in enumerate(tests_list):
+        '''for idx,test in enumerate(tests_list):
             folds_stats_list.append(run_entire_flow_iteration(run_mode,algorithms_list,test,wo_users,link_ref,link_weight,redirect_ref,redirect_weight,nstart_flag) )
+            '''
                 
     print '\n\nEVALUATION END: num of algorithms- '+str(len(algorithms_list))+', num of iterations per algorithm- '+str(len(tests_list))+', total num of iterations- '+str(len(tests_list)*len(algorithms_list))+'\nTOTAL RUN TIME: ' + str(datetime.now()-startTime); sys.stdout.flush()
     return folds_stats_list 
@@ -184,7 +185,8 @@ def main():
     #run_scores_histogram(run_mode,algorithms_list)
     
     out_fn = gm.get_general_file_path(run_mode, 'eval_union_stats', dir='outputs')
-    stats.stats_union(folds_stats_list, out_fn, raw_flag=True)
+    if len(folds_stats_list):   # if folds_stats_list not empty- means there was K fold cross validation run (not just BL)
+        stats.stats_union(folds_stats_list, out_fn, raw_flag=True)
     return
 
 if __name__ == '__main__':
