@@ -213,12 +213,13 @@ class domains_graph():
         high means more than the averaged of the number of users entered to domain by all its incoming edges. '''
         import os, math, tldextract
         if not os.path.exists(fn):
-            b_domains_set = {'xhamster.com','adultism.com','dojki.com','mygames.com.ua','bigpoint.com','flashgames.ru',\
+            b_domains_set = {}
+            '''b_domains_set = {'xhamster.com','adultism.com','dojki.com','mygames.com.ua','bigpoint.com','flashgames.ru',\
                              'a10.com','xnxx.com','nick.de','porngaytube.net','amazingwildtube.com','youporn.com',\
                              'redtube.com','besttubeclips.net','youjizz.com','jacquieetmichel.net','dudesnude.com',\
                              'sourceforge.net','kinox.to','hentai.ms','imagefap.com','movie2k.to','sexuria.com',\
                              'gallerysex.net','ashemaletube.com','xvideos.com','escort-ireland.com','tube8.com',\
-                             'perveden.com','gidonline.ru','met-art.com','oddassy.com','cam4.com'}
+                             'perveden.com','gidonline.ru','met-art.com','oddassy.com','cam4.com'}'''
             g_domains_set = {'google','facebook','ebay','twitter','yandex','paypal','citibank','bing','yahoo','youtube',\
                              'apple','tripadvisor'} 
             whiteList_set = {'babylon.com','walla.co.il','flickr.com','netflix.com','firefox.com','conduit.com',\
@@ -230,7 +231,7 @@ class domains_graph():
             
             
             g_traffic_dict = self.G.in_degree(weight=self.e_attr.good)
-            gm.write_dict_ordered_by_value_to_file(g_traffic_dict, '_'.join([fn,'DEBUG_goodTraffic']))
+            #gm.write_dict_ordered_by_value_to_file(g_traffic_dict, '_'.join([fn,'DEBUG_goodTraffic']))
             avg = math.ceil(float(sum(g_traffic_dict.values()))/len(g_traffic_dict))
             trh = 10 * avg
             added_whiteList = [k for k,v in g_traffic_dict.items() if v>=trh]
@@ -241,6 +242,7 @@ class domains_graph():
             whiteList_set.update(added_whiteList)   # insert the new domains from added_whiteList (list) to the whiteList_set (set)                   
             
             # for DEBUG:
+            self.export_traffic_info_DEBUG('_'.join([fn,'DEBUG_traffic_info']))
             WL_dict = dict((k,v) for k,v in g_traffic_dict.items() if k in added_whiteList)
             gm.write_dict_ordered_by_value_to_file(WL_dict, '_'.join([fn,'DEBUG'])) # mainly for debug!! 
             # end DEBUG
@@ -570,20 +572,21 @@ class domains_graph():
             test_mal = test[0][np.where(test[1]==1)]
         test_scores_list = []
         for alg in algs_list:
-            Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_auth_Lpct[alg]]) for k in test_mal))
-            test_scores_list.append([ self.G.node[k][self.alg_auth_Lpct[alg]] for k in test[0] ])
+            Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_auth_Lpct[alg]]) for k in test_mal)) #dict of the Lpct values of the risky domains ONLY! (the ones with label 1)
+            test_scores_list.append([ self.G.node[k][self.alg_auth_Lpct[alg]] for k in test[0] ])   #list of the Lpct values of ALL domains 
             eval_algs_list.append('_'.join([alg,'auth']))
             if alg in self.alg_hub_Lpct:    #hits or salsa
-                Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_hub_Lpct[alg]]) for k in test_mal))
-                test_scores_list.append([ self.G.node[k][self.alg_hub_Lpct[alg]] for k in test[0] ])
+                Lpct_dicts_list.append(dict((k,self.G.node[k][self.alg_hub_Lpct[alg]]) for k in test_mal))  #dict of the Lpct values of the risky domains ONLY! (the ones with label 1)
+                test_scores_list.append([ self.G.node[k][self.alg_hub_Lpct[alg]] for k in test[0] ])    #list of the Lpct values of ALL domains 
                 eval_algs_list.append('_'.join([alg,'hub']))
         s = stats.stats(eval_algs_list,Lpct_dicts_list,test[1],test_scores_list) # stats instantiation
         s.calc_stats()
         if fn: # "full run" 
             s.export_info(fn=fn,raw_flag=True)
             s.export_seed_histogram(fn=fn[:-4])
+        '''#FOR DEBUG:
         else: # a fold run- we still want to export the histogram of the known bad domains:
-            s.export_seed_histogram(fn='/home/michal/SALSA_files/outputs/real_run/hist_'+datetime.now().strftime("%H:%M:%S"))
+            s.export_seed_histogram(fn='/home/michal/SALSA_files/outputs/real_run/hist_'+datetime.now().strftime("%H:%M:%S"))'''
 
             
         
@@ -648,4 +651,11 @@ class domains_graph():
         
         return
     
-    
+    def export_traffic_info_DEBUG(self,fn):
+        g_in = self.G.in_degree(weight=self.e_attr.good)
+        b_in = self.G.in_degree(weight=self.e_attr.bad)
+        g_out = self.G.out_degree(weight=self.e_attr.good)
+        b_out = self.G.out_degree(weight=self.e_attr.bad)
+        risk = self.get_nodes_attr_val_dict(self.n_attr.risk)
+        gm.write_union_of_dicts_ordered_by_value_to_file(d=g_in,dicts_list=[b_in,g_out,b_out,risk],fn=fn)
+        return

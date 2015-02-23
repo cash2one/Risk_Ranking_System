@@ -198,12 +198,12 @@ def salsa(G,max_iter=100,tol=1.0e-8,nstart_dict=None,normalized=True):
         for n in h:
             for nbr in G[n]:        #G[n] = all the out links of node n
                 #a[nbr]+=hlast[n]*G[n][nbr].get('weight',1)
-                a[nbr]+=hlast[n]*L_r[n][nbr]
+                a[nbr]+=hlast[n]*L_c[n][nbr]
         # now multiply h=Ga
         for n in h:
             for nbr in G[n]:        #G[n] = all the out links of node n
                 #h[n]+=a[nbr]*G[n][nbr].get('weight',1)
-                h[n]+=a[nbr]*L_c[n][nbr]                
+                h[n]+=a[nbr]*L_r[n][nbr]                
         # normalize vector
         s=1.0/max(h.values())
         for n in h: h[n]*=s
@@ -482,8 +482,22 @@ def salsa_per_class(G):
     print '\t~~~~~~ salsa_per_class ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
     authorities_dict, auth_class_dict = calc_salsa_per_class(G, rank_type='authority')
     hubs_dict, hub_class_dict = calc_salsa_per_class(G, rank_type='hub')
+    #authorities_dict, auth_class_dict = calc_auth_scores(G,hubs_dict)
     print '\n\t\t--- salsa_per_class took: ',datetime.now()-startTime; sys.stdout.flush()
     return hubs_dict, hub_class_dict, authorities_dict, auth_class_dict
+
+def calc_auth_scores(G,h_dict):
+    a = dict.fromkeys(h_dict.keys(),0)
+    a_class = dict.fromkeys(h_dict.keys(),0) # not in use
+    L_c = get_matrix_norm_by_col(G)
+    for n in h_dict:
+        for nbr in G[n]:    # G[n] is the out links of node n
+            a[nbr] += h_dict[n]*L_c[n][nbr]
+    # normalization- sums to 1:
+    factor=1.0/sum(a.itervalues())                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+    for k in a:
+        a[k] = a[k]*factor
+    return a,a_class
 
 def calc_salsa_per_class(G, rank_type):
     # G is the original graph
@@ -504,10 +518,10 @@ def calc_salsa_per_class(G, rank_type):
     scores_dict = {}
     tmpTime = datetime.now()
     classes = nx.strongly_connected_component_subgraphs(G_new)
-    print '--- calc_salsa_per_class: separate to classes took- '+str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
+    #print '--- calc_salsa_per_class: separate to classes took- '+str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
     #remove classes of isolated nodes:   
     classes[:] = [ c for idx,c in enumerate(classes) if c.nodes()[0] not in isolates ]
-    print '--- calc_salsa_per_class: clean classes from isolates took- ',datetime.now()-tmpTime; sys.stdout.flush(); 
+    #print '--- calc_salsa_per_class: clean classes from isolates took- ',datetime.now()-tmpTime; sys.stdout.flush(); 
     
     num_of_classes = 0
     domain_class_dict = {}

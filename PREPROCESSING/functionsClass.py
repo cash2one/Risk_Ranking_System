@@ -255,6 +255,7 @@ class Functions(object):
                     userRiskDict[u] = 0
         
         else:   # The users risk rank dict file already exists (can be a file from Nancy)
+            print 'exportMyUserRiskLabelDictToFile: do not calc the users risk rank- instead reading it from an existed file- ',fn
             userRiskDict = gm.readDict(fn)  # load the users risk dict
             for line in l.lines:            # check that all users (from lines) appear in the dict- if not add them with a value of zero:
                 userRiskDict.setdefault(line[Label.uId],0)

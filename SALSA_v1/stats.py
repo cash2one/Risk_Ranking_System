@@ -33,7 +33,8 @@ class stats():
         self.stats = {} 
         for idx,alg in enumerate(algs_list):
             alg_Lpct_dict = Lpct_dicts_list[idx]
-            # Lpct_val_list - list of the alg Lpct values ordered by domain
+            # Lpct_val_list - list of the alg Lpct values of the risky domains ONLY (label=1) ordered by domain
+            # test_scores_list - list of the alg Lpct of ALL domains
             self.stats[alg] = {'Lpct_dict' : alg_Lpct_dict,\
                                'Lpct_val_list' : np.array(zip(*sorted(alg_Lpct_dict.items()))[1]),\
                                'test_scores_list': np.asarray(scores_list[idx])}    
@@ -72,12 +73,29 @@ class stats():
     def export_seed_histogram(self,fn):
         '''export the histogram of seed (label 1 domains) of all algs to file)'''
         import matplotlib.pyplot as plt
+        import matplotlib as mpl
+
+        # These are the "Tableau 20" colors as RGB.  
+        tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),  
+                     (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),  
+                     (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),  
+                     (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),  
+                     (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]  
+          
+        # Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts.  
+        for i in range(len(tableau20)):  
+            r, g, b = tableau20[i]  
+            tableau20[i] = (r / 255., g / 255., b / 255.)  
+        
         ranks = []  # list of the algs seed ranks lists, [ [3,55,46] , [35,88,67] , ... ]
         algs = []
-        seed_idxs = np.where(self.test_labels == 1)[0]
+        for alg,val in self.stats.items():
+            algs.append(alg)
+            ranks.append(val['Lpct_val_list'])
+        '''seed_idxs = np.where(self.test_labels == 1)[0]
         for k,v in self.stats.items():  # for each alg:
             algs.append(k)
-            ranks.append(v['test_scores_list'][seed_idxs])
+            ranks.append(v['test_scores_list'][seed_idxs])'''
         
         
         '''y0,binEdges=np.histogram(ranks[0],bins=10)
@@ -109,23 +127,48 @@ class stats():
         alg4 = algs[4]
         alg5 = algs[5]
         
-        plt.plot(y0,'-', label=alg0)
-        plt.plot(y1,'-', label=alg1)
-        plt.plot(y2,'-', label=alg2)
-        plt.plot(y3,'-', label=alg3)
-        plt.plot(y4,'-', label=alg4)
-        plt.plot(y5,'-', label=alg5)
+        plt.figure(facecolor="white")
+        
+        plt.plot(y0,'-', label=alg0,lw=1.5, color=tableau20[0])
+        plt.plot(y1,'-', label=alg1,lw=1.5, color=tableau20[2])
+        plt.plot(y2,'-', label=alg2,lw=1.5, color=tableau20[4])
+        plt.plot(y3,'-', label=alg3,lw=1.5, color=tableau20[6])
+        plt.plot(y4,'-', label=alg4,lw=1.7, color=tableau20[8])
+        plt.plot(y5,'-', label=alg5,lw=1.7, color=tableau20[16])
         '''for i in ranks:
             plt.plot(bincenters,np.histogram(ranks[i],bins=10)[0],'-', label=algs[i])'''
         
         '''plt.plot(bincenters,y0,'-', bincenters,y1,'r-', bincenters,y2,'g-',\
                  bincenters,y3,'y-', bincenters,y4,'o-', bincenters,y5,'p-')'''
         
+        title_font = mpl.font_manager.FontProperties(style='italic', weight='bold', size=18)#family='times new roman', 
+        label_font = mpl.font_manager.FontProperties(style='italic', size=16)
+        xlb = plt.xlabel('Percentile bucket')
+        ylb = plt.ylabel('Normalized number of known risky domains')  # normalized means that the sum area under the ORIGINAL histogram BARS is 1, it is not real percentage, cause potentially one bar can be higher than 1 if another is very low...
+        title = plt.title('Histogram of the known risky domains\nrisk ranks per algorithm',y=1.005)
+        title.set_font_properties(title_font) 
+        xlb.set_font_properties(label_font)
+        ylb.set_font_properties(label_font)
+        #plt.legend(bbox_to_anchor=(0.75, 1.), loc=2, borderaxespad=0.,prop={'size':11})
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.0), ncol=3,prop={'size':11}, fancybox=True, shadow=True)
         
-        plt.xlabel('Percentile bucket')
-        plt.ylabel('Number of known risky domains')
-        plt.title('Histogram of the known risky domains risk ranks per algorithm')
-        plt.legend(bbox_to_anchor=(0.75, 1.), loc=2, borderaxespad=0.,prop={'size':11})
+        
+        '''ax = plt.subplot(111)  
+        ax.spines["top"].set_visible(False)  
+        ax.spines["bottom"].set_visible(False)  
+        ax.spines["right"].set_visible(False)  
+        ax.spines["left"].set_visible(False)  
+        
+        ax.get_xaxis().tick_bottom()  
+        ax.get_yaxis().tick_left()'''
+        ylim = list(plt.axis())[-2:]
+        for y in np.arange(ylim[0], ylim[1], 0.005):  
+            plt.plot(range(0,10), [y] * 10, "--", lw=0.5, color="black", alpha=0.3)  
+        
+        plt.tick_params(axis="both", which="both", bottom="off", top="off",  
+                        labelbottom="on", left="off", right="off", labelleft="on")  
+
+        
         #plt.show()
         plt.savefig(''.join([fn,'.png']))
         return
@@ -193,11 +236,13 @@ def stats_union(stats_list,fn,raw_flag=False):
                     u_test_label_list = np.concatenate([u_test_label_list,s.test_labels])
         u_s = stats(algs_list,u_dicts_list,u_test_label_list,u_test_scores_list)
         u_s.calc_stats()
+        
         # calc averaged aucs and update u_s accordingly (the auc of the union stats is not correct, cause you cannot compare the Lpct scores of different domains from different runs of the same algorithm, basically it got worse auc values than actual average)
         num_of_domains = len(u_s.test_labels)
         for idx,alg in enumerate(algs_list):
             u_s.stats[alg][u_s.atr.auc] = accum_aucs_list[idx]/num_of_domains
     u_s.export_info(fn,raw_flag)
+    u_s.export_seed_histogram(fn=fn[:-4])
     return
 
 '''#FOR DEBUG:

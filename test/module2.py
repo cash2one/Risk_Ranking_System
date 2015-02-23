@@ -85,59 +85,110 @@ print 'risky: ',risky
 import numpy as np
 #import pylab as p
 import matplotlib.pyplot as plt
+#import pylab as plt
+#import pylab as P
+   
 
-'''#plt.subplot(110)
-plt.plot([1,2,3], label="test1")
-plt.plot([3,2,1], label="test2")
-# Place a legend to the right of this smaller figure.
-plt.legend(bbox_to_anchor=(0.79, 0.98), loc=2, borderaxespad=0.)
+''''n, bins, patches = P.hist(x, 50, normed=1, histtype='step', cumulative=True)
 
-plt.show()'''
+# add a line showing the expected distribution
+y = P.normpdf( bins, mu, sigma).cumsum()
+y /= y[-1]
+l = P.plot(bins, y, 'k--', linewidth=1.5)
+
+# create a second data-set with a smaller standard deviation
+sigma2 = 15.
+x = mu + sigma2*P.randn(10000)
+
+n, bins, patches = P.hist(x, bins=bins, normed=1, histtype='step', cumulative=True)
+
+# add a line showing the expected distribution
+y = P.normpdf( bins, mu, sigma2).cumsum()
+y /= y[-1]
+l = P.plot(bins, y, 'r--', linewidth=1.5)
+
+# finally overplot a reverted cumulative histogram
+n, bins, patches = P.hist(x, bins=bins, normed=1,
+    histtype='step', cumulative=-1)
+
+
+P.grid(True)
+P.ylim(0, 1.05)'''
+#----------------------------------
+plt.figure(figsize=(12, 14)) 
+# These are the "Tableau 20" colors as RGB.  
+tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),  
+             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),  
+             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),  
+             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),  
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]  
+  
+# Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts.  
+for i in range(len(tableau20)):  
+    r, g, b = tableau20[i]  
+    tableau20[i] = (r / 255., g / 255., b / 255.)  
 
 algs = ['test1','test2','test3']
 data = [np.array(np.random.rand(1000)),np.array(np.random.rand(1000)),np.array(np.random.rand(1000))]
 
-binEdges=np.histogram(data[0],bins=10)[1]
-print 'binEdges',binEdges, 'type-',type(binEdges)
+#y,binEdges=np.histogram(data[0],bins=10)
+y, bins, patches = plt.hist(data[0], bins=10, normed=1, histtype='step')#, cumulative=-1)#cumulative=True)
+print y;print bins; print patches
 data2=np.array(np.random.rand(1000))
-y2=np.histogram(data2,bins=10)[0]
-print type(y2)
-'''
+#y2=np.histogram(data2,bins=10)[0]
+y2, bins, patches = plt.hist(data2, bins=10, normed=1, histtype='step')#, cumulative=-1)
 data3=np.array(np.random.rand(1000))
-y3,binEdges=np.histogram(data3,bins=10)
+#y3,binEdges=np.histogram(data3,bins=10)
+y3, bins, patches = plt.hist(data3, bins=10, normed=1, histtype='step')#, cumulative=-1)
 data4=np.array(np.random.rand(1000))
-y4,binEdges=np.histogram(data4,bins=10)'''
+#y4,binEdges=np.histogram(data4,bins=10)
+y4, bins, patches = plt.hist(data4, bins=10, normed=1, histtype='step')#, cumulative=-1)
 
-bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
+Y = [y,y2,y3,y4]
+#bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
 
-print 'bincenters',bincenters,type(bincenters)
-#plt.subplot(110)
-'''plt.plot(bincenters,y,'-',label="test1")
-plt.plot(bincenters,y2,'-', label="test2")
-plt.plot(bincenters,y3,'-', label="test3")
-plt.plot(bincenters,y4,'-', label="test4")'''
+'''plt.plot(bincenters,y,'-',lw=2.5, color=tableau20[0], label="test1")
+plt.plot(bincenters,y2,'-', lw=2.5, color=tableau20[2], label="test2")
+plt.plot(bincenters,y3,'-', lw=2.5, color=tableau20[4], label="test3")
+plt.plot(bincenters,y4,'-', lw=2.5, color=tableau20[6], label="test4")
+'''
+bins_range = bins[:-1]
+'''
+plt.plot(bins_range,y,'-',lw=2.5, color=tableau20[0], label="test1")
+plt.plot(bins_range,y2,'-', lw=2.5, color=tableau20[2], label="test2")
+plt.plot(bins_range,y3,'-', lw=2.5, color=tableau20[4], label="test3")
+plt.plot(bins_range,y4,'-', lw=2.5, color=tableau20[6], label="test4")
 #plt.plot(bincenters,y,'-',bincenters,y2,'r-')
+'''
 
-print np.histogram(data[0],bins=10)[0]
-print np.histogram(data[1],bins=10)[0]
-print np.histogram(data[2],bins=10)[0]
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.), ncol=3,prop={'size':11}, fancybox=True, shadow=True)
+plt.grid()
 
-for i in data:
-    y,b = np.histogram(data[i],bins=10)#,dtype=int)
-    alg = str(algs[i])
-    plt.plot(bincenters,y,'-', label=alg)
-        
 
-plt.legend(bbox_to_anchor=(0.79, 0.98), loc=2, borderaxespad=0.)
+'''ax = plt.subplot(111)  
+ax.spines["top"].set_visible(False)  
+ax.spines["bottom"].set_visible(False)  
+ax.spines["right"].set_visible(False)  
+ax.spines["left"].set_visible(False)  
+
+ax.get_xaxis().tick_bottom()  
+ax.get_yaxis().tick_left()'''
+
+'''ylim = list(plt.axis())[-2:]
+for y in np.arange(ylim[0], ylim[1], 0.005):  
+    plt.plot(range(0,10), [y] * 10, "--", lw=0.5, color="black", alpha=0.3)  '''
+            
+plt.tick_params(axis="both", which="both", bottom="off", top="off",  
+                labelbottom="on", left="off", right="off", labelleft="on")  
 
 plt.show()
 
 
-plt.savefig('bla.png')
+#plt.savefig('bla.png')
 
 
-
+'''
 x = np.array([1,0,2,0,3,0,4,5,6,7,8])
 print np.where(x == 0)[0]
-print x[np.where(x == 0)[0]]
+print x[np.where(x == 0)[0]]'''
 #p.show()

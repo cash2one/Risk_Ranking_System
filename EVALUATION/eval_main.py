@@ -14,7 +14,7 @@ import numpy as np
 '''################## config parameters ##################'''
 
 global run_mode;            run_mode = 'real_run'  #'small_test' #    
-global multiproc_flag;      multiproc_flag = False
+global multiproc_flag;      multiproc_flag = True
 global num_of_proc;         num_of_proc = 3   
 global k_folds;             k_folds = 6
 global algorithms_list;     algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
@@ -26,7 +26,7 @@ global redirect_weight;     redirect_weight=0.5
 global link_ref;            link_ref=True
 global link_weight;         link_weight=0.2
 
-global wo_users;            wo_users=True
+global wo_users;            wo_users=False
 global nstart_flag;         nstart_flag = False
 
 '''######################################################'''
