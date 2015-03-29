@@ -82,7 +82,10 @@ def main(run_mode='real_run',algorithms_list=[],test=[],fold=None,nstart_flag=Fa
     risk_dict = None
     if nstart_flag:
         risk_dict = G.get_nodes_attr_val_dict(G.n_attr.risk)
-    run = {'salsa':'G.run_salsa(salsa_type=\'salsa_per_class\')', \
+        if len(test):
+            for d in test_mal:
+               risk_dict[d] = 0.0 
+    run = {'salsa':'G.run_salsa(salsa_type=\'salsa_per_class\',nstart_flag=nstart_flag)', \
                'hits':'G.run_hits(hits_type=\'hits\',nstart=risk_dict)', \
                'pagerank':'G.run_pagerank(pagerank_type=\'pagerank\',personalization=risk_dict)',\
                'inverse_pagerank':'G.run_pagerank(pagerank_type=\'pagerank\',personalization=risk_dict,inverse=True)'}

@@ -477,11 +477,24 @@ def salsa_sparse(G,CN_name='CN',normalized=True, debug_mode=False):
 
     return hubs,authorities
 
-def salsa_per_class(G):
-    # G is the original graph
+def salsa_per_class(G, nstart_flag=False):
+    '''
+    Calculates the SALSA hub and auth scores of graph 
+    Parameters
+    ----------
+        G - networkx directed graph, the original graph
+        nstart_flag - boolian, for risk nstart (components normalized by known risk weight) pass True,
+                otherwise (False) the normalization will be as per the component size (related to the entire graph)
+    Returns
+    -------
+        hubs_dict - dict of nodes names and the hub SALSA scores 
+        hub_class_dict - dict of nodes names and thier hub strongly connected component index (0=isolates,1= the biggest component,...)
+        authorities_dict - dict of nodes names and the auth SALSA scores  
+        auth_class_dict - dict of nodes names and thier auth strongly connected component index (0=isolates,1= the biggest component,...)
+    '''
     print '\t~~~~~~ salsa_per_class ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
-    authorities_dict, auth_class_dict = calc_salsa_per_class(G, rank_type='authority')
-    hubs_dict, hub_class_dict = calc_salsa_per_class(G, rank_type='hub')
+    authorities_dict, auth_class_dict = calc_salsa_per_class(G, rank_type='authority', nstart_flag=nstart_flag)
+    hubs_dict, hub_class_dict = calc_salsa_per_class(G, rank_type='hub', nstart_flag=nstart_flag)
     #authorities_dict, auth_class_dict = calc_auth_scores(G,hubs_dict)
     print '\n\t\t--- salsa_per_class took: ',datetime.now()-startTime; sys.stdout.flush()
     return hubs_dict, hub_class_dict, authorities_dict, auth_class_dict
@@ -499,9 +512,86 @@ def calc_auth_scores(G,h_dict):
         a[k] = a[k]*factor
     return a,a_class
 
-def calc_salsa_per_class(G, rank_type):
+
+def calc_salsa_per_class(G, rank_type, nstart_flag=False):
+    '''
+    Calculates the SALSA hub/auth scores of graph by the the (normalized) dominant eigenvector of each 
+    strongly connected component in the relevant graph type (SALSA hub/auth) 
+    Parameters
+    ----------
+        G - networkx directed graph, the original graph
+        rank_type - string, 'authority' or 'hub' - the required score type
+        nstart_flag - boolian, for risk nstart (components normalized by known risk weight) pass True,
+                otherwise (False) the normalization will be as per the component size (related to the entire graph)
+    Returns
+    -------
+        scores_dict - dict of nodes names and the required SALSA scores (hub/auth)
+        domain_class_dict - dict of nodes names and thier strongly connected component index (0=isolates,1= the biggest component,...)
+    '''
+    import scipy.sparse
+    
+    print '\t\t~~~~~~ calc_salsa_per_class ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
+
+    # Authority / Hub matrix:
+    A=get_matrix(G,mat_type=rank_type,sparse=True)
+    G_new = nx.DiGraph(A)
+    if nstart_flag:  # normalize by the proportion of known risk weight of the component
+        import graph
+        risk = graph.node_attributes().risk
+        risks_dict = dict(zip(G_new.nodes(),zip(*nx.get_node_attributes(G, name=risk).items())[1]))
+        total_risk_sum = sum(risks_dict.values())
+    '''DEBUG:
+    out_file = ''.join(['/home/michal/SALSA_files/tmp/real_run/middle_graph_',str(rank_type)])
+    gm.write_graph_to_file(G_new, out_file)'''
+    #x=scipy.ones((n,1))/n  # initial guess
+    isolates = nx.isolates(G_new)   # isolate node is a node with in_deg=out_deg=0
+    print '--- calc_salsa_per_class: num of isolates- ',len(isolates),', out of- ',G_new.number_of_nodes(),' nodes (',float(len(isolates))/G_new.number_of_nodes(),'%)'; sys.stdout.flush()
+    num_of_not_isolates = G_new.number_of_nodes() - len(isolates)
+    scores_dict = {}
+    #tmpTime = datetime.now()
+    classes = nx.strongly_connected_component_subgraphs(G_new)
+    #print '--- calc_salsa_per_class: separate to classes took- '+str(datetime.now()-tmpTime); sys.stdout.flush(); tmpTime = datetime.now()
+    #remove classes of isolated nodes:   
+    classes[:] = [ c for idx,c in enumerate(classes) if c.nodes()[0] not in isolates ]
+    #print '--- calc_salsa_per_class: clean classes from isolates took- ',datetime.now()-tmpTime; sys.stdout.flush(); 
+    
+    num_of_classes = 0
+    domain_class_dict = {}
+    for subG in classes:
+        num_of_classes += 1
+        '''DEBUG: 
+        out_file = ''.join(['/home/michal/SALSA_files/tmp/real_run/graph_',str(classes.index(subG))])
+        gm.write_graph_to_file(subG, out_file)'''
+        if nstart_flag:  # normalize by the proportion of known risk weight of the component
+            class_risk_sum = sum([risks_dict[k] for k in subG.nodes_iter()])
+            tmp_d = eig_calc(subG, nstart_norm=float(class_risk_sum)/total_risk_sum)
+        else:       # normalize by the component size
+            tmp_d = eig_calc(subG, normalize=num_of_not_isolates)
+        #tmp_d = power_iteration(subG,max_iter=100,tol=1.0e-8,normalize=num_of_not_isolates,nstart=None)
+        #tmp_d = power_iteration(subG, normalize=num_of_not_isolates, nstart=[v[G.n_attr.risk] for v in subG.nodes(data=True)])
+        for k,v in tmp_d.items():
+            d = G.nodes()[k]
+            scores_dict[d] = v
+            domain_class_dict[d] = num_of_classes
+    print '--- calc_salsa_per_class: num of classes (NOT including isolates)- ',num_of_classes
+    for i in isolates:
+        d = G.nodes()[i]
+        if nstart_flag:  # normalize by the proportion of known risk weight of the component
+            scores_dict[d] = float(risks_dict[i])/total_risk_sum
+        else:       # normalize by the component size
+            scores_dict[d] = 0
+        domain_class_dict[d] = 0 # class zero represents the isolates
+    #print authority_dict
+    print '--- calc_salsa_per_class took: ',datetime.now()-startTime; sys.stdout.flush()
+
+    return scores_dict, domain_class_dict
+
+
+def calc_salsa_per_class_OLD(G, rank_type):
+    '''
     # G is the original graph
     # rank_type = 'authority' or 'hub' 
+    '''
     import scipy.sparse
     print '\t\t~~~~~~ calc_salsa_per_class ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
 
@@ -547,7 +637,60 @@ def calc_salsa_per_class(G, rank_type):
 
     return scores_dict, domain_class_dict
 
-def eig_calc(G,normalize=None):
+def eig_calc(G,normalize=None,nstart_norm=None):
+    '''
+    Calculates the dominant eigenvector of graph (the one related to eigenvector = 1). 
+    Parameters
+    ----------
+        G - networkx directed graph, the strongly connected component (subGraph) in our case
+        normalized - int, the number of nodes in the original (entire) graph- for normlizing the resulted eigenvector as per the proportion of the component from the entire (original) graph
+        nstart_norm - float, the weight [0,1] for normalizing the resulted eigenvector (for referring the risk proportion of the component from the entire (original) graph).
+        *NOTE: normalize and nstart_norm cannot come together!! only one of them can be different from None!
+    Returns
+    -------
+        results_dict - a dict of the (normalized) dominant eigenvector (the keys are G nodes names- basically integer)
+    '''
+    import scipy as sp
+    #print '\n\t~~~~~~ eig_calc ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
+    startTime = datetime.now() 
+    n = G.number_of_nodes()
+    if n == 1:
+        eigvec = np.array([1])
+    elif n == 2:     # for handling ValueError: k must be less than ndim(A)-1, k=1
+        return power_iteration(G,normalize=normalize,nstart_norm=nstart_norm)
+    else:    # the graph contains more than 2 nodes
+        A=nx.to_scipy_sparse_matrix(G)
+        '''print '--- eig_calc: is sub graph stochastic? ' + str(gm.check_if_stochastic_matrix(nx.to_numpy_matrix(G)))#; sys.stdout.flush()
+        print '--- eig_calc: is sub graph strongly connected? ' + str(nx.is_strongly_connected(G))#; sys.stdout.flush()
+        print '--- eig_calc: is sub graph aperiodic? ' + str(nx.is_aperiodic(G));# sys.stdout.flush()
+        print '--- eig_calc: debug step took: '+str(datetime.now()-tmpTime); tmpTime = datetime.now(); sys.stdout.flush()
+        '''
+        try:
+            eigval,eigvec = sp.sparse.linalg.eigen.arpack.eigs(A.T, k=1, sigma=1, which='LM')
+        except RuntimeError:    
+            B=nx.to_scipy_sparse_matrix(add_noise(G))
+            eigval,eigvec = sp.sparse.linalg.eigen.arpack.eigs(B.T, k=1, sigma=1, which='LM')
+        #eigval,eigvec = sp.sparse.linalg.eigen.arpack.eigs(A.T, k=1, which='LM')
+        #print '--- eig_calc: eigs took: '+str(datetime.now()-tmpTime); sys.stdout.flush()
+        #print '--- eig_calc: sub graph eigval- '+str(eigval)
+    eigvec = eigvec/eigvec.sum()
+    if normalize:
+        norm_factor = float(n)/normalize
+        eigvec = eigvec*norm_factor  
+        
+        if n > 100: print '--- eig_calc: calc of class contains ',n,' nodes, (',float(n)/normalize,'% of the non-isolates nodes from the graph) took-',datetime.now()-startTime; sys.stdout.flush()
+    
+    elif nstart_norm != None:
+        eigvec = eigvec*nstart_norm
+        
+        if n > 100: print '--- eig_calc: calc of class contains ',n,' nodes, took-',datetime.now()-startTime; sys.stdout.flush()
+    #if (eigvec.imag.sum() != 0. ):
+    #    print '##### COMPLEX VECTOR!!!! returning the real part only!!! #####'; #sys.stdout.flush(
+    results_dict = dict(zip(G.nodes(),map(float,eigvec.real)))
+    
+    return results_dict
+
+def eig_calc_OLD(G,normalize=None):
     import scipy as sp
     #print '\n\t~~~~~~ eig_calc ~~~~~~'; startTime = datetime.now(); sys.stdout.flush()
     startTime = datetime.now() 
@@ -581,7 +724,24 @@ def eig_calc(G,normalize=None):
     if n > 100: print '--- eig_calc: calc of class contains '+str(n)+' nodes, ('+str(float(n)/normalize)+'% of the non-isolates nodes from the graph) took-'+str(datetime.now()-startTime); sys.stdout.flush()
     return results_dict
 
-def power_iteration(G,max_iter=100,tol=1.0e-8,normalize=None,nstart=None):
+def power_iteration(G,max_iter=100,tol=1.0e-8,normalize=None,nstart=None,nstart_norm=None):
+    '''
+    Calculates the steady state of graph using power method. 
+    In formal we use it when graph size is 2... 
+    Parameters
+    ----------
+        G - networkx directed graph, the strongly connected component (subGraph) in our case
+        max_iter - int, max iterations
+        tol - float , the tolerance 
+        normalize - int, the number of nodes in the original (entire) graph- for normlizing the resulted eigenvector as per the proportion of the component from the entire (original) graph
+        nstart - list of floats - the initial vector.
+        nstart_norm - float, the weight [0,1] for normalizing the resulted eigenvector (for referring the risk proportion of the component from the entire (original) graph).
+        *NOTE: normalize and nstart_norm cannot come together!! only one of them can be different from None!
+               nstart and nstart_norm are not related to each other!
+    Returns
+    -------
+        results_dict - a dict of the (normalized) dominant eigenvector (the keys are G nodes names- basically integer)
+    '''
     import scipy#.sparse
     #import numpy as np
     startTime = datetime.now() 
@@ -623,8 +783,10 @@ def power_iteration(G,max_iter=100,tol=1.0e-8,normalize=None,nstart=None):
     if normalize:
         norm_factor = float(G.number_of_nodes())/normalize
         results = results*norm_factor
+    elif nstart_norm != None:
+        results = results*nstart_norm
     results_dict = dict(zip(G.nodes(),map(float,results)))
-    if n > 100: print '--- power_iteration: calc of class contains '+str(n)+' nodes, ('+str(float(n)/normalize)+'% of the main graph) took-'+str(datetime.now()-startTime); sys.stdout.flush()
+    #if n > 100: print '--- power_iteration: calc of class contains '+str(n)+' nodes, ('+str(float(n)/normalize)+'% of the main graph) took-'+str(datetime.now()-startTime); sys.stdout.flush()
     return results_dict
 
 def salsa_scipy(G,max_iter=100,tol=1.0e-6,normalized=True):

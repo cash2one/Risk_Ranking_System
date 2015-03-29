@@ -4,6 +4,7 @@
 	<comment></comment>
 	<projects>
 		<project>PREPROCESSING</project>
+		<project>SALSA_v1</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

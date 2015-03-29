@@ -162,7 +162,7 @@ plt.plot(bins_range,y4,'-', lw=2.5, color=tableau20[6], label="test4")
 '''
 
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.), ncol=3,prop={'size':11}, fancybox=True, shadow=True)
-plt.grid()
+plt.grid(axis=y)
 
 
 '''ax = plt.subplot(111)  

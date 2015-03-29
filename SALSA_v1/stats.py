@@ -27,7 +27,21 @@ class stats_alg_atributes():
 class stats():
         
     def __init__(self,algs_list,Lpct_dicts_list,label_list=[],scores_list=[]):
-        # the order of Lpct_dicts should be as the algs_list order!!
+        ''' initiate of stats object
+        Parameters
+        -----------
+        algs_list - list of algorithm names (strings) 
+        Lpct_dicts_list - list of the Lpct scores (dict of 'domain':<Lpct_score>)
+            NOTE: the order of Lpct_dicts should be as the algs_list order!!
+        label_list - list of labels (0/1) of the TEST set, [0,1,0,1,1,...] (default empty list [])
+        scores_list - list of scores list of the TEST set, [ [45.5,8.3,..], [59.6,99.7,...], ... ] 
+            (default empty list [])
+            NOTE: the order of the scores lists should be as the algs_list order!!
+                  the inner order of the elements in each scores list should match the (domains order of) label_list
+        Returns
+        --------
+        None
+        '''
         self.atr = stats_alg_atributes()
         self.test_labels = np.asarray(label_list)
         self.stats = {} 

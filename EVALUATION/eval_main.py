@@ -13,7 +13,7 @@ import numpy as np
 
 '''################## config parameters ##################'''
 
-global run_mode;            run_mode = 'real_run'  #'small_test' #    
+global run_mode;            run_mode = 'real_run'  # 'small_test' #   
 global multiproc_flag;      multiproc_flag = True
 global num_of_proc;         num_of_proc = 3   
 global k_folds;             k_folds = 6
@@ -27,7 +27,7 @@ global link_ref;            link_ref=True
 global link_weight;         link_weight=0.2
 
 global wo_users;            wo_users=False
-global nstart_flag;         nstart_flag = False
+global nstart_flag;         nstart_flag = True
 
 '''######################################################'''
 
@@ -144,7 +144,8 @@ def main():
     from sklearn import cross_validation
     import stats
     import os
-    
+    startTime = datetime.now() 
+
     domains_risk_dict_f = gm.get_general_file_path(run_mode, 'mal_d/domains_risk', dir='tmp')
     
     # If the domains-label file not exist, run a 'full run' for creating the file (for stratified Kfolds)
@@ -187,6 +188,8 @@ def main():
     out_fn = gm.get_general_file_path(run_mode, 'eval_union_stats', dir='outputs')
     if len(folds_stats_list):   # if folds_stats_list not empty- means there was K fold cross validation run (not just BL)
         stats.stats_union(folds_stats_list, out_fn, raw_flag=True)
+    print 'EVALUATION MAIN: Total time: ',startTime-datetime.now(); sys.stdout.flush()
+
     return
 
 if __name__ == '__main__':

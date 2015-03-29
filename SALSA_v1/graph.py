@@ -195,14 +195,20 @@ class domains_graph():
         return
     
     def add_nodes_attr(self,attr_name,attr_val_dict):
-        for n in self.G.nodes_iter():
-            if n in attr_val_dict:
-                self.G.node[n][attr_name] = attr_val_dict[n]
-            else:
-                self.G.node[n][attr_name] = 0
+        if len(attr_val_dict) == nx.number_of_nodes(self.G):
+            nx.set_node_attributes(self.G, name=attr_name, attributes=attr_val_dict)
+        else:
+            for n in self.G.nodes_iter():
+                if n in attr_val_dict:
+                    self.G.node[n][attr_name] = attr_val_dict[n]
+                else:
+                    self.G.node[n][attr_name] = 0
         return
     
     def get_nodes_attr_val_dict(self,attr_name):
+        return nx.get_node_attributes(self.G, name=attr_name)
+    
+    def get_nodes_attr_val_dict_OLD(self,attr_name):
         nodes_attr_dict = dict()
         for n in self.G.nodes_iter():
             nodes_attr_dict[n] = self.G.node[n][attr_name]
@@ -259,10 +265,10 @@ class domains_graph():
     
     def post_filtering_results(self,alg):
         for d in self.whiteList_set:
-            self.G.node[d][self.alg_auth_score[alg]] = 0.0
+            if d in self.G.nodes(): self.G.node[d][self.alg_auth_score[alg]] = 0.0
         if alg in self.alg_hub_score:
             for d in self.whiteList_set:
-                self.G.node[d][self.alg_hub_score[alg]] = 0.0
+                if d in self.G.nodes(): self.G.node[d][self.alg_hub_score[alg]] = 0.0
         return
     
     
@@ -312,12 +318,12 @@ class domains_graph():
         self.add_nodes_attr(attr_name, PR)
         return None,PR  # the first is None- cause when calling this method we assume there might be hubs scores as well...
        
-    def run_salsa(self,salsa_type='salsa_per_class', normalized=True, nstart=None, tol=10e-8, max_iter=1000):
+    def run_salsa(self,salsa_type='salsa_per_class', normalized=True, nstart=None, tol=10e-8, max_iter=1000, nstart_flag=False):
         run = {'iterative':'salsa.salsa(self.G, max_iter, tol, nstart, normalized)', \
                'eigenvector':'salsa.salsa_numpy(self.G, normalized)', \
                'sparse_eigenvector':'salsa.salsa_sparse(self.G,normalized=True)',\
                'sparse_iterrative':'salsa.salsa_scipy(self.G, max_iter, tol, normalized)',\
-               'salsa_per_class':'salsa.salsa_per_class(self.G)'}  #'sparse_iterrative':'salsa.salsa_scipy(self.G, max_iter, tol, nstart, normalized)'}
+               'salsa_per_class':'salsa.salsa_per_class(self.G, nstart_flag=nstart_flag)'}  #'sparse_iterrative':'salsa.salsa_scipy(self.G, max_iter, tol, nstart, normalized)'}
         h, h_classes, a, a_classes = eval(run[salsa_type])
         self.add_nodes_attr(self.n_attr.salsa_hub_score, h)
         self.add_nodes_attr(self.n_attr.salsa_auth_score, a)
