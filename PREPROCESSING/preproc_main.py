@@ -52,7 +52,12 @@ def get_input_files(runType):
                  '/'.join([main_dir,'2/stats_12_03_10/part-00008']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00009']),\
                  '/'.join([main_dir,'2/stats_12_03_10/part-00010'])] '''
+        #Files = ['/'.join([main_dir,'2/stats_12_03_11/part-00000'])]  
+        #Files = ['/'.join([main_dir,'2/stats_12_03_23/part-00001'])]  
         Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001'])]  # 19673 domains, 6 malwares, 47593 edges
+        '''Files = ['/'.join([main_dir,'2/stats_12_03_10/part-00001']),
+                 '/'.join([main_dir,'2/stats_12_03_11/part-00000']),
+                 '/'.join([main_dir,'2/stats_12_03_23/part-00001'])]'''
         #Files = ['/'.join([main_dir,'150/stats_12_03_10/part-00000'])]  # 19673 domains, 6 malwares, 47593 edges
         print 'get_input_files: input files- ',Files
         '''NANCY FILES:

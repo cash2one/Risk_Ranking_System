@@ -125,8 +125,9 @@ class stats():
         y1 = np.histogram(ranks[1],bins=10, normed=True)[0]
         y2 = np.histogram(ranks[2],bins=10, normed=True)[0]
         y3 = np.histogram(ranks[3],bins=10, normed=True)[0]
-        y4 = np.histogram(ranks[4],bins=10, normed=True)[0]
-        y5 = np.histogram(ranks[5],bins=10, normed=True)[0]
+        if len(algs)>4:
+            y4 = np.histogram(ranks[4],bins=10, normed=True)[0]
+            y5 = np.histogram(ranks[5],bins=10, normed=True)[0]
 
         #bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
         for idx,alg in enumerate(algs):
@@ -138,8 +139,9 @@ class stats():
         alg1 = algs[1]
         alg2 = algs[2]
         alg3 = algs[3]
-        alg4 = algs[4]
-        alg5 = algs[5]
+        if len(algs)>4:
+            alg4 = algs[4]
+            alg5 = algs[5]
         
         plt.figure(facecolor="white")
         
@@ -147,8 +149,9 @@ class stats():
         plt.plot(y1,'-', label=alg1,lw=1.5, color=tableau20[2])
         plt.plot(y2,'-', label=alg2,lw=1.5, color=tableau20[4])
         plt.plot(y3,'-', label=alg3,lw=1.5, color=tableau20[6])
-        plt.plot(y4,'-', label=alg4,lw=1.7, color=tableau20[8])
-        plt.plot(y5,'-', label=alg5,lw=1.7, color=tableau20[16])
+        if len(algs)>4:
+            plt.plot(y4,'-', label=alg4,lw=1.7, color=tableau20[8])
+            plt.plot(y5,'-', label=alg5,lw=1.7, color=tableau20[16])
         '''for i in ranks:
             plt.plot(bincenters,np.histogram(ranks[i],bins=10)[0],'-', label=algs[i])'''
         
@@ -217,9 +220,88 @@ class stats():
             
         f.close()
         return
+
+
+def export_aucs_list(aucs_dict,folds_bad_domains_num_list,folds_test_size_list,fn):
+    '''
+    export the AUC values of all folds for each algorithm for analysis (Ttest,for example)
+    Parameters
+    ----------
+        aucs - duct of lists of ints, keys=algs , vals=lists of auc values ordered by the fold number.
+        folds_bad_domains_num_list - list of ints , the number of risky domains (label 1) of each fold, ordered by fold number.
+        folds_test_size_list - list of ints , the number of domains in the test set of each fold, ordered by fold number.
+        fn - output file name including path, with NO ending (like .csv)
+        
+    Returns nothing
+    '''
+    import csv
+    f=open(''.join([fn,'_folds_aucs.csv']), "wb")
+    w = csv.writer(f)
+    np.set_printoptions(precision=3)    # For printing numpy objects- prints 3 decimal after the point.
+    w.writerow(['Algorithm','Folds AUC'])
     
-       
+    for k,v in aucs_dict.items():
+            w.writerow([k] + v)#["%.3f"%v[i] for i in np.asarray(v)])
+            
+    w.writerow([' ']); w.writerow(['Folds num of risky domains in test set:']+folds_bad_domains_num_list+[sum(folds_bad_domains_num_list)])
+    w.writerow(['Folds size of test set']+folds_test_size_list+[sum(folds_test_size_list)])
+    f.close()
+    return
+    
 def stats_union(stats_list,fn,raw_flag=False):
+    ''' union several stats objects into one object (and write its info to a file at the end)
+        Parameters
+        ----------
+        stats_list = a list of stats objects
+        fn = (string) full path name of output file
+        raw_flag = (bool) is True for writing the raw data as well (Lpct values) 
+        
+        Returns
+        -------
+        None'''
+    if len(stats_list) == 1:    #In cases of NO K fold cross validation (evaluated domains list is empty)
+        u_s = stats_list[0]
+    else:   #K fold cross validation
+        s = stats_list[0]
+        u_obj = s.stats
+        algs_list = u_obj.keys()
+        u_dicts_list = [ u_obj[alg]['Lpct_dict'] for alg in algs_list ]
+        u_test_label_list = stats_list[0].test_labels
+        u_test_scores_list = [ u_obj[alg]['test_scores_list'] for alg in algs_list ]
+        accum_aucs_list = [ u_obj[alg][s.atr.auc]*len(s.test_labels) for alg in algs_list ]
+        
+        aucs_dict = {}
+        folds_test_size_list = [len(s.test_labels)]
+        folds_bad_domains_num_list = [s.test_labels.sum()]
+        for alg in algs_list:
+            aucs_dict[alg] = [u_obj[alg][s.atr.auc]]
+        
+        for idx,alg in enumerate(algs_list):   # concatenate all Lpct dicts to the one of first object for each alg (saved as list of those dicts- u_dicts_list)
+            for s in stats_list[1:]:    # stats_list[0] already in u_dicts_list
+                u_dicts_list[idx].update(s.stats[alg]['Lpct_dict'])  
+                u_test_scores_list[idx] = np.concatenate([u_test_scores_list[idx],s.stats[alg]['test_scores_list']])
+                accum_aucs_list[idx] += s.stats[alg][s.atr.auc]*len(s.test_labels)
+                if not idx: #enter for the first algorithm only- for each object in stats_list
+                    u_test_label_list = np.concatenate([u_test_label_list,s.test_labels])
+                    
+                    folds_test_size_list.append(len(s.test_labels))
+                    folds_bad_domains_num_list.append(s.test_labels.sum())
+                aucs_dict[alg].append(s.stats[alg][s.atr.auc])
+        export_aucs_list(aucs_dict,folds_bad_domains_num_list,folds_test_size_list,fn=fn[:-4])
+                
+        u_s = stats(algs_list,u_dicts_list,u_test_label_list,u_test_scores_list)
+        u_s.calc_stats()
+        
+        # calc averaged aucs and update u_s accordingly (the auc of the union stats is not correct, cause you cannot compare the Lpct scores of different domains from different runs of the same algorithm, basically it got worse auc values than actual average)
+        num_of_domains = len(u_s.test_labels)
+        for idx,alg in enumerate(algs_list):
+            u_s.stats[alg][u_s.atr.auc] = accum_aucs_list[idx]/num_of_domains
+    u_s.export_info(fn,raw_flag)
+    u_s.export_seed_histogram(fn=fn[:-4])
+    return
+
+
+def stats_union_OLD(stats_list,fn,raw_flag=False):
     ''' union several stats objects into one object (and write its info to a file at the end)
         Parameters
         ----------
@@ -258,6 +340,8 @@ def stats_union(stats_list,fn,raw_flag=False):
     u_s.export_info(fn,raw_flag)
     u_s.export_seed_histogram(fn=fn[:-4])
     return
+
+
 
 '''#FOR DEBUG:
 def main():

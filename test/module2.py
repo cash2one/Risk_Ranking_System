@@ -192,3 +192,9 @@ x = np.array([1,0,2,0,3,0,4,5,6,7,8])
 print np.where(x == 0)[0]
 print x[np.where(x == 0)[0]]'''
 #p.show()
+
+
+
+
+print plt.axis().get_yaxis().get_yticklines()
+

@@ -13,21 +13,21 @@ import numpy as np
 
 '''################## config parameters ##################'''
 
-global run_mode;            run_mode = 'real_run'  # 'small_test' #   
-global multiproc_flag;      multiproc_flag = True
+global run_mode;            run_mode =  'real_run'  # 'small_test' #    
+global multiproc_flag;      multiproc_flag = True # False #
 global num_of_proc;         num_of_proc = 3   
-global k_folds;             k_folds = 6
+global k_folds;             k_folds = 10 # 6 #   
 global algorithms_list;     algorithms_list = ['salsa', 'hits', 'pagerank', 'inverse_pagerank'] #inverse RP changes the graph itself, hence should be last
 #global algorithms_list;     algorithms_list = ['hits', 'pagerank', 'inverse_pagerank']
 
-global redirect_ref;        redirect_ref=True
-global redirect_weight;     redirect_weight=0.5
+global redirect_ref;        redirect_ref = True #  False  # 
+global redirect_weight;     redirect_weight= 0.#0.5
 
-global link_ref;            link_ref=True
-global link_weight;         link_weight=0.2
+global link_ref;            link_ref = True
+global link_weight;         link_weight = 0.#0.2
 
-global wo_users;            wo_users=False
-global nstart_flag;         nstart_flag = True
+global wo_users;            wo_users = True #  False #  
+global nstart_flag;         nstart_flag = False # True #  
 
 '''######################################################'''
 
